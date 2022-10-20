@@ -11,10 +11,10 @@ This contains the below elements:
   - **sign_request**: to sign request
 - payment:
   - **make_deposit**: to make a deposit operation
-  - **make_payment**: to make a deposit operation
-  - **update_security**: to make a deposit operation
-  - **get_status**: to make a deposit operation
-  - **get_transactions**: to make a deposit operation
+  - **make_payment**: collect money from an account
+  - **update_security**: update security settings
+  - **get_status**: get your service status
+  - **get_transactions**: get transactions by ids
 
 # Installation
 
@@ -76,5 +76,20 @@ configs = {
   'access_key': '<access-key>'
 }
 response = get_transactions(configs, datetime.now(), ['<ID1>', '<ID2>', '...'])
+print(response.text)
+```
+
+## Get application status
+
+```python
+from datetime import datetime
+from pymesomb.payment import get_status
+
+configs = {
+  'application_key': '<application-key>',
+  'secret_key': '<secret-key>',
+  'access_key': '<access-key>'
+}
+response = get_status(configs, datetime.now())
 print(response.text)
 ```
