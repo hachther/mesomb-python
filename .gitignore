@@ -1,0 +1,7 @@
+main.py
+.history/
+.idea/
+build/
+dist/
+pymesomb.egg-info/
+*.pyc
