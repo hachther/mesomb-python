@@ -5,3 +5,4 @@ build/
 dist/
 pymesomb.egg-info/
 *.pyc
+_trial_temp

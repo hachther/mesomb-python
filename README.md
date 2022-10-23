@@ -1,95 +1,86 @@
-Python client to work with MeSomb Services
+<h1 align="center">Welcome to pymesomb 👋</h1>
+<p>
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000" />
+  <a href="https://mesomb.hachther.com/en/api/v1.1/schema/" target="_blank">
+    <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" />
+  </a>
+  <a href="#" target="_blank">
+    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
+  </a>
+  <a href="https://twitter.com/hachther" target="_blank">
+    <img alt="Twitter: hachther" src="https://img.shields.io/twitter/follow/hachther.svg?style=social" />
+  </a>
+</p>
 
-# Description
+> Python client for MeSomb Services
+> 
+> You can check the full [documentation of the api here](https://mesomb.hachther.com/en/api/v1.1/schema/)
 
-This will help your quickly integrate MeSomb API in your python project. 
-You can check the [full API documentation here](https://mesomb.hachther.com/en/api/v1.1/schema/)
+### 🏠 [Homepage](https://mesomb.com)
 
-This contains the below elements:
+## Install
 
-- signature:
-  - **sign_request**: to sign request
-- payment:
-  - **make_deposit**: to make a deposit operation
-  - **make_payment**: collect money from an account
-  - **update_security**: update security settings
-  - **get_status**: get your service status
-  - **get_transactions**: get transactions by ids
-
-# Installation
-
-## Normal Installation
-
-```bash
-pip install pymesomb
+```sh
+pip3 install pymesomb
 ```
 
-## Development installation
+## Usage
 
-```bash
-git clone https://github.com/hachther/pymesomb.git
-cd pymesomb
-pip install --editable .
-```
-
-# Usage
-
-## Collect money from an account
+### Collect money from an account
 
 ```python
+from pymesomb.operations import PaymentOperation
+from pymesomb.signature import Signature
 from datetime import datetime
-from pymesomb.payment import make_payment
 
-configs = {
-  'application_key': '<application-key>',
-  'secret_key': '<secret-key>',
-  'access_key': '<access-key>'
-}
-response = make_payment(configs, 100, 'MTN', '677550203', datetime.now(), nonce='<randomstring>')
-print(response.text)
+operation = PaymentOperation('<application_key>', '<access_key>', '<secret_key>')
+response = operation.make_collect(100, 'MTN', '677550203', datetime.now(), Signature.generate_nonce())
+print(response.is_operation_success())
+print(response.is_transaction_success())
 ```
 
-## Depose money in an account
+### Depose money in an account
 
 ```python
+from pymesomb.operations import PaymentOperation
+from pymesomb.signature import Signature
 from datetime import datetime
-from pymesomb.payment import make_deposit
 
-configs = {
-  'application_key': '<application-key>',
-  'secret_key': '<secret-key>',
-  'access_key': '<access-key>'
-}
-response = make_deposit(configs, 100, 'MTN', '677550203', datetime.now(), nonce='<random-string>')
-print(response.text)
+operation = PaymentOperation('<application_key>', '<access_key>', '<secret_key>')
+response = operation.make_deposit(100, 'MTN', '677550203', datetime.now(), Signature.generate_nonce())
+print(response.is_operation_success())
+print(response.is_transaction_success())
 ```
 
-## Get Transaction by IDs
+### Get application status
 
 ```python
-from datetime import datetime
-from pymesomb.payment import get_transactions
+from pymesomb.operations import PaymentOperation
 
-configs = {
-  'application_key': '<application-key>',
-  'secret_key': '<secret-key>',
-  'access_key': '<access-key>'
-}
-response = get_transactions(configs, datetime.now(), ['<ID1>', '<ID2>', '...'])
-print(response.text)
+operation = PaymentOperation('<application_key>', '<access_key>', '<secret_key>')
+response = operation.get_status()
+print(response.name)
 ```
 
-## Get application status
+### Get transactions by IDs
 
 ```python
-from datetime import datetime
-from pymesomb.payment import get_status
+from pymesomb.operations import PaymentOperation
 
-configs = {
-  'application_key': '<application-key>',
-  'secret_key': '<secret-key>',
-  'access_key': '<access-key>'
-}
-response = get_status(configs, datetime.now())
-print(response.text)
+operation = PaymentOperation('<application_key>', '<access_key>', '<secret_key>')
+response = operation.get_transactions(['ID1', 'ID2'])
+print(response)
 ```
+
+## Author
+
+👤 **Hachther LLC <contact@hachther.com>**
+
+* Website: https://www.hachther.com
+* Twitter: [@hachther](https://twitter.com/hachther)
+* Github: [@hachther](https://github.com/hachther)
+* LinkedIn: [@hachther](https://linkedin.com/in/hachther)
+
+## Show your support
+
+Give a ⭐️ if this project helped you!
