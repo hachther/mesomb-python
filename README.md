@@ -30,11 +30,18 @@ pip3 install pymesomb
 
 ```python
 from pymesomb.operations import PaymentOperation
-from pymesomb.signature import Signature
+from pymesomb.utils import RandomGenerator
 from datetime import datetime
 
 operation = PaymentOperation('<application_key>', '<access_key>', '<secret_key>')
-response = operation.make_collect(100, 'MTN', '677550203', datetime.now(), Signature.generate_nonce())
+response = operation.make_collect({
+    'amount': 100,
+    'service': 'MTN',
+    'payer': '670000000',
+    'date': datetime.now(),
+    'nonce': RandomGenerator.nonce(),
+    'trxID': '1'
+})
 print(response.is_operation_success())
 print(response.is_transaction_success())
 ```
@@ -43,11 +50,18 @@ print(response.is_transaction_success())
 
 ```python
 from pymesomb.operations import PaymentOperation
-from pymesomb.signature import Signature
+from pymesomb.utils import RandomGenerator
 from datetime import datetime
 
 operation = PaymentOperation('<application_key>', '<access_key>', '<secret_key>')
-response = operation.make_deposit(100, 'MTN', '677550203', datetime.now(), Signature.generate_nonce())
+response = operation.make_deposit({
+    'amount': 100,
+    'service': 'MTN',
+    'receiver': '670000000',
+    'date': datetime.now(),
+    'nonce': RandomGenerator.nonce(),
+    'trxID': '1'
+})
 print(response.is_operation_success())
 print(response.is_transaction_success())
 ```
