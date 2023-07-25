@@ -1,31 +1,30 @@
 class APIException(Exception):
-  """
+    """
   Base class for REST framework exceptions.
   Subclasses should provide `.status_code` and `.default_detail` properties.
   """
-  default_detail = ''
-  default_code = 'error'
+    default_detail = ''
+    default_code = 'error'
 
-  def __init__(self, detail, code):
-    self.detail = detail or self.default_detail
-    self.code = code or self.default_code
+    def __init__(self, detail, code):
+        self.detail = detail or self.default_detail
+        self.code = code or self.default_code
 
-  def __str__(self):
-    return str(self.detail)
+    def __str__(self):
+        return str(self.detail)
 
 
 class ServiceNotFoundException(APIException):
-  pass
+    pass
 
 
 class PermissionDeniedException(APIException):
-  pass
+    pass
 
 
 class InvalidClientRequestException(APIException):
-  pass
-
+    pass
 
 
 class ServerException(APIException):
-  pass
+    pass
