@@ -1,3 +1,7 @@
+# 1.0.3 (2024-01-24)
+- Handle case when trxID is not string 
+- Fix crash to display response
+
 # 1.0.2 (2023-07-25)
 ## === BREAKING CHANGES ===
 Only one parameter is now passed to make_deposit and make_collect. The parameter is a Map that will contain all details of your request.

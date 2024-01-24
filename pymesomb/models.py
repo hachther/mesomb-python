@@ -53,6 +53,9 @@ class Transaction:
             self.products = [Product(p) for p in data['products']]
         # self.products = data['products?.map((d: Record < string, any >) = > new Product(d))']
 
+    def __str__(self):
+        return self.pk
+
 
 class TransactionResponse:
     def __init__(self, data):
@@ -64,7 +67,7 @@ class TransactionResponse:
         self.status = data['status']
 
     def __str__(self):
-        return self.data['id']
+        return '{}: {}'.format(self.status, self.message)
 
     def is_operation_success(self):
         return self.success

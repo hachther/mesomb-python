@@ -63,7 +63,7 @@ class PaymentOperation:
         if body:
             body['source'] = 'PyMeSomb/{}'.format(mesomb.version)
         if body and 'trxID' in body:
-            headers['X-MeSomb-TrxID'] = body.pop('trxID')
+            headers['X-MeSomb-TrxID'] = str(body.pop('trxID'))
 
         if mode:
             headers['X-MeSomb-OperationMode'] = mode
