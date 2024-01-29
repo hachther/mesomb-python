@@ -1,6 +1,7 @@
 # 1.0.3 (2024-01-24)
 - Handle case when trxID is not string 
 - Fix crash to display response
+- Add raw_response in TransactionResponse to store MeSomb response.
 
 # 1.0.2 (2023-07-25)
 ## === BREAKING CHANGES ===
