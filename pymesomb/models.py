@@ -59,6 +59,8 @@ class Transaction:
 
 class TransactionResponse:
     def __init__(self, data):
+        self.raw_response = data
+
         self.success = data['success']
         self.message = data['message']
         self.redirect = data['redirect']
