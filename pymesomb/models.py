@@ -75,7 +75,7 @@ class TransactionResponse:
         return self.success
 
     def is_transaction_success(self):
-        return self.success and self.status == 'SUCCESS'
+        return self.success and self.transaction.status == 'SUCCESS'
 
 
 class ApplicationBalance:

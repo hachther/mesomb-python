@@ -193,6 +193,16 @@ class StatusTest(unittest.TestCase):
         self.assertListEqual(application.countries, ['CM', 'NE'])
 
 
+class UtilTest(unittest.TestCase):
+    def test_operator_detect(self):
+        from pymesomb.utils import detect_operator
+
+        self.assertEqual(detect_operator('677559230'), 'MTN')
+        self.assertEqual(detect_operator('237677559230'), 'MTN')
+        self.assertEqual(detect_operator('690090980'), 'ORANGE')
+        self.assertEqual(detect_operator('237690090980'), 'ORANGE')
+
+
 class TransactionTest(unittest.TestCase):
     def setUp(self):
         mesomb.host = 'http://192.168.8.103:8000'
