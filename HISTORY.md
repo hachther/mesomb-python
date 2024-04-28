@@ -1,3 +1,6 @@
+# 1.0.4 (2024-04-28)
+- Add function to detect phone number operator in cameroon
+
 # 1.0.3 (2024-01-24)
 - Handle case when trxID is not string 
 - Fix crash to display response
