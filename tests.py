@@ -3,7 +3,8 @@ from datetime import datetime
 
 from pymesomb import mesomb
 from pymesomb.exceptions import ServiceNotFoundException, PermissionDeniedException, InvalidClientRequestException
-from pymesomb.operations import PaymentOperation
+from pymesomb.models import Wallet
+from pymesomb.operations import PaymentOperation, WalletOperation
 from pymesomb.utils import RandomGenerator
 
 
@@ -224,3 +225,71 @@ class TransactionTest(unittest.TestCase):
         operation = PaymentOperation(self.application_key, self.access_key, self.secret_key)
         transactions = operation.get_transactions(['9886f099-dee2-4eaa-9039-e92b2ee33353'])
         self.assertEqual(1, len(transactions))
+
+
+class WalletTest(unittest.TestCase):
+    def setUp(self):
+        mesomb.host = 'http://127.0.0.1:8000'
+        self.provider_key = 'a1dc7a7391c538788043'
+        self.access_key = '28823cb9-0caf-4d6d-84ca-4d7b94aad353'
+        self.secret_key = '3043b689-b37d-4c45-ac5a-bda19b04f559'
+
+    def test_operations(self):
+
+        # Create wallet
+        operation = WalletOperation(self.provider_key, self.access_key, self.secret_key)
+        identifier = 59
+        wallet = operation.create_wallet({
+            'first_name': 'Vigny',
+            'last_name': 'GHOTOU',
+            'phone_number': '+237677559230',
+            'nonce': RandomGenerator.nonce(),
+        })
+        self.assertIsNotNone(wallet.number)
+        self.assertEqual(wallet.balance, 0)
+        identifier = wallet.identifier
+
+        # Get Wallet
+        wallet = operation.get_wallet(identifier)
+        self.assertIsNotNone(wallet.number)
+
+        wallet = operation.update_wallet(identifier, {
+            'first_name': 'Daniel',
+            'last_name': 'Smith',
+            'nonce': RandomGenerator.nonce(),
+        })
+        wallet = operation.get_wallet(identifier)
+        self.assertIsNotNone(wallet.number)
+        self.assertEqual(wallet.first_name, u'Daniel')
+        self.assertEqual(wallet.last_name, u'Smith')
+
+        wallets = operation.list_wallets()
+        self.assertGreater(wallets['count'], 0)
+        self.assertGreater(len(wallets['results']), 0)
+
+        ret = operation.adjust_wallet(identifier, {
+            'amount': 200,
+            'direction': 1,
+            'nonce': RandomGenerator.nonce(),
+        })
+        self.assertEqual(ret['wallet'].balance, 200)
+
+        ret = operation.adjust_wallet(identifier, {
+            'amount': 200,
+            'direction': -1,
+            'nonce': RandomGenerator.nonce(),
+        })
+        self.assertEqual(ret['wallet'].balance, 0)
+
+        ret = operation.adjust_wallet(identifier, {
+            'amount': 200,
+            'direction': -1,
+            'force': True,
+            'nonce': RandomGenerator.nonce(),
+        })
+        self.assertEqual(ret['wallet'].balance, -200)
+
+        operation.delete_wallet(identifier)
+
+
+

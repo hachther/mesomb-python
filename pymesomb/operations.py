@@ -6,7 +6,7 @@ import requests
 from pymesomb import mesomb
 from pymesomb.exceptions import ServiceNotFoundException, PermissionDeniedException, InvalidClientRequestException, \
     ServerException
-from pymesomb.models import TransactionResponse, Application, Transaction
+from pymesomb.models import TransactionResponse, Application, Transaction, Wallet
 from pymesomb.signature import Signature
 
 
@@ -246,3 +246,98 @@ class PaymentOperation:
         """
         endpoint = 'payment/transactions/check/?ids={}&source={}'.format(','.join(ids), source)
         return [Transaction(item) for item in self._execute_request('GET', endpoint, datetime.now())]
+
+
+class WalletOperation:
+    def __init__(self, provider_key, access_key, secret_key):
+        self.provider_key = provider_key
+        self.access_key = access_key
+        self.secret_key = secret_key
+
+    def get_authorization(self, method, endpoint, date, nonce, headers=None, body=None):
+        if headers is None:
+            headers = {}
+
+        url = build_url(endpoint)
+
+        credentials = {'access_key': self.access_key, 'secret_key': self.secret_key}
+
+        return Signature.sign_request('wallet', method, url, date, nonce, credentials, headers, body)
+
+    def _execute_request(self, method, endpoint, date, nonce='', body=None):
+        url = build_url(endpoint)
+
+        headers = {
+            'x-mesomb-date': str(int(date.timestamp())),
+            'x-mesomb-nonce': nonce,
+            'X-MeSomb-Provider': self.provider_key,
+        }
+        if body:
+            body['source'] = 'PyMeSomb/{}'.format(mesomb.version)
+
+        if method == 'POST':
+            authorization = self.get_authorization(method, endpoint, date, nonce,
+                                                   headers={'content-type': 'application/json'},
+                                                   body=body)
+        else:
+            authorization = self.get_authorization(method, endpoint, date, nonce)
+
+        headers['Authorization'] = authorization
+
+        response = requests.request(method, url, json=body, headers=headers)
+
+        status_code = response.status_code
+        if status_code >= 400:
+            process_client_exception(response)
+
+        return response.json() if len(response.text) > 0 else True
+
+    def create_wallet(self, params):
+        endpoint = 'wallet/'
+
+        date = params.pop('date', datetime.now())
+        nonce = params.pop('nonce')
+
+        return Wallet(self._execute_request('POST', endpoint, date, nonce, params))
+
+    def update_wallet(self, identifier, params):
+        endpoint = f'wallet/{identifier}/'
+
+        date = params.pop('date', datetime.now())
+        nonce = params.pop('nonce')
+
+        return Wallet(self._execute_request('PATCH', endpoint, date, nonce, params))
+
+    def get_wallet(self, identifier):
+        endpoint = f'wallet/{identifier}/'
+
+        return Wallet(self._execute_request('GET', endpoint, datetime.now()))
+
+    def delete_wallet(self, identifier):
+        endpoint = f'wallet/{identifier}/'
+
+        return self._execute_request('DELETE', endpoint, datetime.now())
+
+    def adjust_wallet(self, id, params):
+
+        endpoint = f'wallet/{id}/adjust/'
+
+        date = params.pop('date', datetime.now())
+        nonce = params.pop('nonce')
+
+        ret = self._execute_request('POST', endpoint, date, nonce, params)
+
+        return {'wallet': Wallet(ret['wallet'])}
+
+    def list_wallets(self, page=None):
+        endpoint = f'wallet/'
+
+        if page:
+            endpoint = f'{endpoint}?page={page}'
+
+        response = self._execute_request('GET', endpoint, datetime.now())
+
+        return {
+            **response,
+            'results': [Wallet(item) for item in response['results']]
+        }

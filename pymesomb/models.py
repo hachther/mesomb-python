@@ -112,3 +112,22 @@ class Application:
                 continue
             balance += bal.value
         return balance
+
+
+class Wallet:
+    def __init__(self, data):
+        self.identifier = data['identifier']
+        # self.provider = data['provider']
+        self.number = data['number']
+        self.country = data['country']
+        self.status = data['status']
+        self.last_activity = data['last_activity']
+        self.balance = data['balance']
+        self.first_name = data['first_name']
+        self.last_name = data['last_name']
+        self.email = data['email']
+        self.phone_number = data['phone_number']
+        self.sex = data['sex']
+
+    def __str__(self):
+        return self.number
