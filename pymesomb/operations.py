@@ -33,7 +33,7 @@ def process_client_exception(response):
 
 
 def build_url(endpoint):
-    return '{}/en/api/{}/{}'.format(mesomb.host, mesomb.api_version, endpoint)
+    return '{}/api/{}/{}'.format(mesomb.host, mesomb.api_version, endpoint)
 
 
 class PaymentOperation:
@@ -59,6 +59,7 @@ class PaymentOperation:
             'x-mesomb-date': str(int(date.timestamp())),
             'x-mesomb-nonce': nonce,
             'X-MeSomb-Application': self.application_key,
+            'Accept-Language': mesomb.language,
         }
         if body:
             body['source'] = 'PyMeSomb/{}'.format(mesomb.version)
