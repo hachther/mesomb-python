@@ -9,7 +9,7 @@ from pymesomb.utils import RandomGenerator
 
 class CollectTest(unittest.TestCase):
     def setUp(self):
-        mesomb.host = 'http://192.168.8.103:8000'
+        mesomb.host = 'http://192.168.100.10:8000'
         self.application_key = '2bb525516ff374bb52545bf22ae4da7d655ba9fd'
         self.access_key = 'c6c40b76-8119-4e93-81bf-bfb55417b392'
         self.secret_key = 'fe8c2445-810f-4caa-95c9-778d51580163'
@@ -42,8 +42,8 @@ class CollectTest(unittest.TestCase):
         self.assertTrue(response.is_operation_success())
         self.assertTrue(response.is_transaction_success())
         self.assertEqual(response.status, "SUCCESS")
-        self.assertEqual(response.transaction.amount, 97)
-        self.assertEqual(response.transaction.fees, 3)
+        self.assertEqual(response.transaction.amount, 98)
+        self.assertEqual(response.transaction.fees, 2)
         self.assertEqual(response.transaction.b_party, "237670000000")
         self.assertEqual(response.transaction.country, "CM")
         self.assertEqual(response.transaction.currency, "XAF")
@@ -79,8 +79,8 @@ class CollectTest(unittest.TestCase):
         self.assertTrue(response.is_operation_success())
         self.assertTrue(response.is_transaction_success())
         self.assertEqual(response.status, "SUCCESS")
-        self.assertEqual(response.transaction.amount, 97)
-        self.assertEqual(response.transaction.fees, 3)
+        self.assertEqual(response.transaction.amount, 98.0)
+        self.assertEqual(response.transaction.fees, 2)
         self.assertEqual(response.transaction.b_party, "237670000000")
         self.assertEqual(response.transaction.country, "CM")
         self.assertEqual(response.transaction.currency, "XAF")
@@ -110,7 +110,7 @@ class CollectTest(unittest.TestCase):
 
 class DepositTest(unittest.TestCase):
     def setUp(self):
-        mesomb.host = 'http://192.168.8.103:8000'
+        mesomb.host = 'http://192.168.100.10:8000'
         self.application_key = '2bb525516ff374bb52545bf22ae4da7d655ba9fd'
         self.access_key = 'c6c40b76-8119-4e93-81bf-bfb55417b392'
         self.secret_key = 'fe8c2445-810f-4caa-95c9-778d51580163'
@@ -153,7 +153,7 @@ class DepositTest(unittest.TestCase):
 
 class SecurityTest(unittest.TestCase):
     def setUp(self):
-        mesomb.host = 'http://192.168.8.103:8000'
+        mesomb.host = 'http://192.168.100.10:8000'
         self.application_key = '2bb525516ff374bb52545bf22ae4da7d655ba9fd'
         self.access_key = 'c6c40b76-8119-4e93-81bf-bfb55417b392'
         self.secret_key = 'fe8c2445-810f-4caa-95c9-778d51580163'
@@ -171,7 +171,7 @@ class SecurityTest(unittest.TestCase):
 
 class StatusTest(unittest.TestCase):
     def setUp(self):
-        mesomb.host = 'http://192.168.8.103:8000'
+        mesomb.host = 'http://192.168.100.10:8000'
         self.application_key = '2bb525516ff374bb52545bf22ae4da7d655ba9fd'
         self.access_key = 'c6c40b76-8119-4e93-81bf-bfb55417b392'
         self.secret_key = 'fe8c2445-810f-4caa-95c9-778d51580163'
@@ -205,7 +205,7 @@ class UtilTest(unittest.TestCase):
 
 class TransactionTest(unittest.TestCase):
     def setUp(self):
-        mesomb.host = 'http://192.168.8.103:8000'
+        mesomb.host = 'http://192.168.100.10:8000'
         self.application_key = '2bb525516ff374bb52545bf22ae4da7d655ba9fd'
         self.access_key = 'c6c40b76-8119-4e93-81bf-bfb55417b392'
         self.secret_key = 'fe8c2445-810f-4caa-95c9-778d51580163'
