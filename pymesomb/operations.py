@@ -195,6 +195,60 @@ class PaymentOperation:
 
         return TransactionResponse(self._execute_request('POST', endpoint, date, nonce, body))
 
+    def make_yango_refill(self, params):
+        """
+        Method to make deposit in a receiver mobile account.
+        [Check the documentation here](https://mesomb.hachther.com/en/api/schema/)
+
+        :param params: dict with the below information
+        - amount: amount to collect
+        - service: payment service with the possible values MTN, ORANGE, AIRTEL
+        - receiver: account number to depose money
+        - date: date of the request
+        - nonce: unique string on each request
+        - country: 2 letters country code of the service (configured during your service registration in MeSomb)
+        - currency: currency of your service depending on your country
+        - fees: false if your want MeSomb fees to be computed and included in the amount to collect
+        - conversion: true in case of foreign currently defined if you want to rely on MeSomb to convert the amount in the local currency
+        - location: Map containing the location of the customer with the following attributes: town, region and location all string.
+        - products: It is array of products. Each product are Map with the following attributes: name string, category string, quantity int and amount float
+        - customer: a Map containing information about the customer: phone string, email: string, first_name string, last_name string, address string, town string, region string and country string
+        - trxID: if you want to include your transaction ID in the request
+        - extra: Map to add some extra attribute depending on the API documentation
+        :return: TransactionResponse
+        """
+        endpoint = 'payment/yango/refill/'
+        url = build_url(endpoint)
+
+        body = {
+            'amount': params['amount'],
+            'payer': params['payer'],
+            'service': params['service'],
+            'driver_id': params['driver_id'],
+            'country': params.get('country', 'CM'),
+            'currency': params.get('currency', 'XAF'),
+        }
+
+        if 'extra' in params:
+            body.update(params['extra'])
+
+        if 'trxID' in params:
+            body['trxID'] = params['trxID']
+
+        if 'location' in params:
+            body['location'] = params['location']
+
+        if 'customer' in params:
+            body['customer'] = params['customer']
+
+        if 'products' in params:
+            body['products'] = params['products']
+
+        date = params.get('date', datetime.now())
+        nonce = params['nonce']
+
+        return TransactionResponse(self._execute_request('POST', endpoint, date, nonce, body))
+
     def update_security(self, field, action, value=None, date=None):
         """
         Update security parameters of your service on MeSomb

@@ -8,7 +8,7 @@ with open('HISTORY.md') as history_file:
 
 setup_args = dict(
     name='pymesomb',
-    version='1.0.4',
+    version='1.1.1',
     description='Python client for MeSomb services.',
     long_description_content_type="text/markdown",
     long_description=README + '\n\n' + HISTORY,
@@ -16,7 +16,7 @@ setup_args = dict(
     packages=find_packages(),
     author='Hachther LLC',
     author_email='contact@hachther.com',
-    keywords=['MeSomb', 'MobileMoney', 'OrangeMoney'],
+    keywords=['MeSomb', 'MobileMoney', 'OrangeMoney', 'YangoRefill'],
     url='https://github.com/hachther/mesomb-python-client.git',
     download_url='https://pypi.org/project/pymesomb/'
 )

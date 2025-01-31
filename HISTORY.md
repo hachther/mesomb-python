@@ -1,3 +1,9 @@
+# 1.1.1 (2025-01-31)
+- Integration of Yango refill
+
+# 1.1.0 (2024-09-02)
+- Add wallet operations: create wallet, update wallet, get wallet, delete wallet, adjust wallet and list wallets.
+
 # 1.0.4 (2024-04-28)
 - Add function to detect phone number operator in cameroon
 

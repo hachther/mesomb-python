@@ -7,3 +7,4 @@ pymesomb.egg-info/
 *.pyc
 _trial_temp
 venv
+.DS_Store
