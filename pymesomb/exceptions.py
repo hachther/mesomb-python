@@ -1,8 +1,12 @@
 class APIException(Exception):
+    """Base class for REST framework exceptions.
+      Subclasses should provide `.status_code` and `.default_detail` properties.
+
+    Args:
+
+    Returns:
+
     """
-  Base class for REST framework exceptions.
-  Subclasses should provide `.status_code` and `.default_detail` properties.
-  """
     default_detail = ''
     default_code = 'error'
 
@@ -15,16 +19,20 @@ class APIException(Exception):
 
 
 class ServiceNotFoundException(APIException):
+    """ """
     pass
 
 
 class PermissionDeniedException(APIException):
+    """ """
     pass
 
 
 class InvalidClientRequestException(APIException):
+    """ """
     pass
 
 
 class ServerException(APIException):
+    """ """
     pass

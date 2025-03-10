@@ -1,9 +1,5 @@
-from . import operations
-from . import utils
-from . import exceptions
+"""
+MeSomb client for Python
+"""
 
-__all__ = [
-    'operations',
-    'utils',
-    'exceptions'
-]
+__version__ = '2.0.0'

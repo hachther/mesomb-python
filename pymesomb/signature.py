@@ -7,21 +7,26 @@ from pymesomb import mesomb
 
 
 class Signature:
+    """ """
     @staticmethod
     def sign_request(service, method, url, date, nonce, credentials, headers=None, body=None):
-        """
-    Method to use to compute signature used in MeSomb request
+        """Method to use to compute signature used in MeSomb request
 
-    :param service: service to use can be payment, wallet ... (the list is provide by MeSomb)
-    :param method: HTTP method (GET, POST, PUT, PATCH, DELETE...)
-    :param url: the full url of the request with query element https://mesomb.hachther.com/path/to/ressource?highlight=params#url-parsing
-    :param date: Datetime of the request
-    :param nonce: Unique string generated for each request sent to MeSomb
-    :param credentials: dict containing key => value for the credential provided by MeSOmb. {'access' => access_key, 'secret' => secret_key}
-    :param headers: Extra HTTP header to use in the signature
-    :param body: The dict containing the body you send in your request body
-    :return: Authorization to put in the header
-    """
+        Args:
+          service: service to use can be payment, wallet ... (the list is provide by MeSomb)
+          method: HTTP method (GET, POST, PUT, PATCH, DELETE...)
+          url: the full url of the request with query element
+          date: Datetime of the request
+          nonce: Unique string generated for each request sent to MeSomb
+          credentials: dict containing key => value for the credential provided by MeSOmb.
+                {'access' => access_key, 'secret' => secret_key}
+          headers: Extra HTTP header to use in the signature (Default value = None)
+          body: The dict containing the body you send in your request body (Default value = None)
+
+        Returns:
+          Authorization to put in the header
+
+        """
         algorithm = mesomb.algorithm
         parse = urlparse(url)
         canonical_query = parse.query

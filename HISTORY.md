@@ -1,3 +1,13 @@
+# 2.0.0 (2025-02-10)
+## Added
+- Add fundraising operations
+- Add wallet operations
+- Add refund transaction operation
+## === BREAKING CHANGES ===
+- Parameters for make_collect and make_deposit are not more passed as dict but as keyword arguments
+- Remove security operations
+- Change parameter ts(str) to date(datetime) in Transaction class
+
 # 1.1.1 (2025-01-31)
 - Integration of Yango refill
 

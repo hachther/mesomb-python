@@ -4,15 +4,30 @@ import string
 
 
 class RandomGenerator:
+    """ """
     @staticmethod
     def nonce(length=40):
+        """
+
+        Args:
+          length:  (Default value = 40)
+
+        Returns:
+
+        """
         letters = string.ascii_letters + string.digits
         return ''.join(random.choice(letters) for i in range(length))
 
 
 def detect_operator(phone, country='CM'):
-    """
-    Detect the operator of a phone number in a country (only cameroon is supported for now)
+    """Detect the operator of a phone number in a country (only cameroon is supported for now)
+
+    Args:
+      phone: 
+      country:  (Default value = 'CM')
+
+    Returns:
+
     """
     OPERATOR_REGEX = {
         'MTN': r'^(237)?(67|65[0-4]|68[0-3])',
