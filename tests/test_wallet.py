@@ -95,15 +95,26 @@ class WalletTest(unittest.TestCase):
         self.assertIsNotNone(transaction.fin_trx_id)
         self.assertIsNotNone(transaction.date)
 
-    def test_get_paginated_transactions(self):
+    def test_list_transactions(self):
         operation = WalletOperation(self.provider_key, self.access_key, self.secret_key)
 
-        transactions = operation.get_transactions(1)
+        transactions = operation.list_transactions(1)
 
         self.assertGreater(transactions.count, 0)
         # self.assertIsNotNone(transactions.next)
         self.assertIsNone(transactions.previous)
         self.assertTrue(len(transactions.results) > 0)
+
+    def test_get_transactions(self):
+        operation = WalletOperation(self.provider_key, self.access_key, self.secret_key)
+
+        transactions = operation.get_transactions([1047, 1048])
+
+        self.assertGreater(len(transactions), 0)
+
+        transactions = operation.get_transactions(['REF-1'], source='EXTERNAL')
+
+        self.assertGreater(len(transactions), 0)
 
     def test_get_transaction(self):
         operation = WalletOperation(self.provider_key, self.access_key, self.secret_key)

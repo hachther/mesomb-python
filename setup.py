@@ -33,8 +33,5 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
-        'Topic :: Software Development :: Libraries :: Mobile Payment',
-        'Topic :: Software Development :: Libraries :: Digital Payment',
-        'Topic :: Software Development :: Libraries :: MeSomb Integration',
     ]
 )

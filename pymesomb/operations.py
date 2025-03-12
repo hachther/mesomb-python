@@ -93,7 +93,7 @@ class AOperation(ABC):
 
         credentials = {'access_key': self.access_key, 'secret_key': self.secret_key}
 
-        return Signature.sign_request('payment', method, url, date, nonce, credentials, headers, body)
+        return Signature.sign_request(self.service, method, url, date, nonce, credentials, headers, body)
 
     def execute_request(self, method: str, endpoint: str, date: datetime, nonce: str = '', body: Dict[str, Any] = None,
                         mode: Optional[str] = None):
@@ -515,7 +515,7 @@ class WalletOperation(AOperation):
 
         return self.execute_request('DELETE', endpoint, datetime.now())
 
-    def add_money(self, wallet: int, amount: float, message: Optional[str] = None) -> WalletTransaction:
+    def add_money(self, wallet: int, amount: float, message: Optional[str] = None, external_id: Optional[str] = None) -> WalletTransaction:
         """
         Add money to a wallet
 
@@ -531,11 +531,16 @@ class WalletOperation(AOperation):
         endpoint = f'wallet/wallets/{wallet}/adjust/'
 
         data = {'amount': amount, 'direction': 1}
+
         if message:
             data['message'] = message
+
+        if external_id:
+            data['trxID'] = external_id
+
         return WalletTransaction(self.execute_request('POST', endpoint, datetime.now(), RandomGenerator.nonce(), data))
 
-    def remove_money(self, wallet: int, amount: float, force: Optional[bool] = False, message: Optional[str] = None) -> WalletTransaction:
+    def remove_money(self, wallet: int, amount: float, force: Optional[bool] = False, message: Optional[str] = None, external_id: Optional[str] = None) -> WalletTransaction:
         """
         Remove money from a wallet
 
@@ -550,14 +555,18 @@ class WalletOperation(AOperation):
         """
         endpoint = f'wallet/wallets/{wallet}/adjust/'
 
-        body = {'amount': amount, 'direction': -1, 'force': force}
-        if message:
-            body['message'] = message
+        data = {'amount': amount, 'direction': -1, 'force': force}
 
-        return WalletTransaction(self.execute_request('POST', endpoint, datetime.now(), RandomGenerator.nonce(), body))
+        if message:
+            data['message'] = message
+
+        if external_id:
+            data['trxID'] = external_id
+
+        return WalletTransaction(self.execute_request('POST', endpoint, datetime.now(), RandomGenerator.nonce(), data))
 
     def transfert_money(self, source: int, dest: int, amount: float,
-                        force: Optional[bool] = False) -> WalletTransaction:
+                        force: Optional[bool] = False, message: Optional[str] = None, external_id: Optional[str] = None) -> WalletTransaction:
         """
         Transfer money from a wallet to another
 
@@ -572,8 +581,15 @@ class WalletOperation(AOperation):
         """
         endpoint = f'wallet/wallets/{source}/transfer/'
 
-        return WalletTransaction(self.execute_request('POST', endpoint, datetime.now(), RandomGenerator.nonce(),
-                                                      {'amount': amount, 'destination': dest, 'force': force}))
+        data = {'amount': amount, 'destination': dest, 'force': force}
+
+        if message:
+            data['message'] = message
+
+        if external_id:
+            data['trxID'] = external_id
+
+        return WalletTransaction(self.execute_request('POST', endpoint, datetime.now(), RandomGenerator.nonce(), data))
 
     def get_wallets(self, page=1):
         """
@@ -603,9 +619,9 @@ class WalletOperation(AOperation):
 
         return WalletTransaction(self.execute_request('GET', endpoint, datetime.now()))
 
-    def get_transactions(self, page: int = 1, wallet: Optional[int] = None):
+    def list_transactions(self, page: int = 1, wallet: Optional[int] = None):
         """
-        Get transactions in MeSomb
+        Listing transactions from MeSomb
 
         Args:
             page (int): the page number (Default value = 1)
@@ -620,6 +636,21 @@ class WalletOperation(AOperation):
             endpoint += f'&wallet={wallet}'
 
         return PaginatedWalletTransactions(self.execute_request('GET', endpoint, datetime.now()))
+
+    def get_transactions(self, ids, source='MESOMB') -> List[WalletTransaction]:
+        """
+        Get transactions base on external in MeSomb's IDs
+
+        Args:
+            ids: list of ids
+            source: source of transactions ids MESOMB or EXTERNAL
+
+        Returns:
+            List[WalletTransaction]
+        """
+        endpoint = f"wallet/transactions/search/?{'&'.join([f'ids={id}' for id in ids])}&source={source}"
+
+        return [WalletTransaction(t) for t in self.execute_request('GET', endpoint, datetime.now())]
 
 
 class FundraisingOperation(AOperation):
