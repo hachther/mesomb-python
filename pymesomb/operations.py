@@ -355,7 +355,7 @@ class PaymentOperation(AOperation):
         Returns:
             List[Transaction]
         """
-        endpoint = f"payment/transactions/?ids={','.join(ids)}&source={source}"
+        endpoint = f"payment/transactions/?{'&'.join([f'ids={id}' for id in ids])}&source={source}"
 
         return [Transaction(item) for item in self.execute_request('GET', endpoint, datetime.now())]
 
