@@ -1,7 +1,7 @@
 import hashlib
 import hmac
 import json
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, urlparse, quote_plus
 
 from pymesomb import mesomb
 
@@ -29,17 +29,17 @@ class Signature:
         """
         algorithm = mesomb.algorithm
         parse = urlparse(url)
-        canonical_query = parse.query
+        canonical_query = '&'.join([f"{quote_plus(c.split('=')[0])}={quote_plus(c.split('=')[1])}" for c in parse.query.split('&')])
 
         timestamp = str(int(date.timestamp()))
 
         # CanonicalHeaders
         if headers is None:
             headers = {}
-        headers['host'] = '{}://{}'.format(parse.scheme, parse.netloc)
+        headers['host'] = f'{parse.scheme}://{parse.netloc}'
         headers['x-mesomb-date'] = timestamp
         headers['x-mesomb-nonce'] = nonce
-        canonical_headers = '\n'.join(['{}:{}'.format(key.lower(), headers[key].strip()) for key in sorted(headers)])
+        canonical_headers = '\n'.join([f'{key.lower()}:{headers[key].strip()}' for key in sorted(headers)])
 
         if body is None:
             body = {}
@@ -49,19 +49,13 @@ class Signature:
 
         signed_headers = ';'.join(sorted(headers))
 
-        canonical_request = '{}\n{}\n{}\n{}\n{}\n{}'.format(method, quote(parse.path), canonical_query,
-                                                            canonical_headers,
-                                                            signed_headers, payload_hash)
+        canonical_request = f'{method}\n{quote(parse.path)}\n{canonical_query}\n{canonical_headers}\n{signed_headers}\n{payload_hash}'
 
-        scope = '{}/{}/mesomb_request'.format(date.strftime('%Y%m%d'), service)
-        string_to_sign = '{}\n{}\n{}\n{}'.format(algorithm, timestamp, scope,
-                                                 hashlib.sha1(canonical_request.encode('utf-8')).hexdigest())
+        scope = f"{date.strftime('%Y%m%d')}/{service}/mesomb_request"
+        string_to_sign = f"{algorithm}\n{timestamp}\n{scope}\n{hashlib.sha1(canonical_request.encode('utf-8')).hexdigest()}"
 
         signature = hmac.new(credentials['secret_key'].encode(), string_to_sign.encode(), hashlib.sha1).hexdigest()
 
-        authorization_header = '{} Credential={}/{}, SignedHeaders={}, Signature={}'.format(algorithm,
-                                                                                            credentials['access_key'],
-                                                                                            scope,
-                                                                                            signed_headers, signature)
+        authorization_header = f"{algorithm} Credential={credentials['access_key']}/{scope}, SignedHeaders={signed_headers}, Signature={signature}"
 
         return authorization_header
