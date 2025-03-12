@@ -29,7 +29,9 @@ class Signature:
         """
         algorithm = mesomb.algorithm
         parse = urlparse(url)
-        canonical_query = '&'.join([f"{quote_plus(c.split('=')[0])}={quote_plus(c.split('=')[1])}" for c in parse.query.split('&')])
+        canonical_query = parse.query
+        if len(canonical_query) > 0:
+            canonical_query = '&'.join([f"{quote_plus(c.split('=')[0])}={quote_plus(c.split('=')[1])}" for c in canonical_query.split('&')])
 
         timestamp = str(int(date.timestamp()))
 
