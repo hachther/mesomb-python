@@ -1,3 +1,14 @@
+# 2.0.2 (2025-03-12)
+- Rename identifier to id in WalletTransaction
+
+# 2.0.1 (2025-03-12)
+## Added
+- Add get_transactions method to retrieve transactions based on ids and external ids
+
+## Update
+- Rename get_transactions to list_transactions in wallet operation
+- Improve canonical query handling in signature.py
+
 # 2.0.0 (2025-02-10)
 ## Added
 - Add fundraising operations

@@ -355,7 +355,7 @@ class Wallet:
     """
 
     def __init__(self, data: Dict[str, Any]):
-        self.id: int = data['identifier']
+        self.id: int = data['id']
         self.number: str = data['number']
         self.country: str = data['country']
         self.status: str = data['status']
