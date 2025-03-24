@@ -281,6 +281,60 @@ class PaymentOperation(AOperation):
         return TransactionResponse(
             self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body))
 
+    def purchase_airtime(self, amount: float, service: str, receiver: str, merchant: str, nonce: Optional[str] = None,
+                     country: Optional[str] = 'CM', currency: Optional[str] = 'XAF',
+                     location: Optional[Dict[str, str]] = None, products: Optional[List[Dict[str, str]]] = None,
+                     customer: Optional[Dict[str, str]] = None, trx_id: Optional[str] = None) -> TransactionResponse:
+        """
+        Method to make deposit in a receiver mobile account.
+
+        Args:
+            amount (float): amount to collect
+            service (str): payment service with the possible values MTN, ORANGE, AIRTEL
+            receiver (str): account number to depose money
+            nonce (str, optional): unique string on each request
+            country (str, optional): 2 letters country code of the service configured during your service
+                    registration in MeSomb (Default value = 'CM')
+            currency (str, optional): currency of your service depending on your country (Default value = 'XAF')
+            merchant (str): merchant number to depose money (MTN, ORANGE, AIRTEL, NEXTTEL)
+            location (dict): Map containing the location of the customer with the following attributes:
+                    town, region and location all string.
+            products (list): It is array of products. Each product are Map with the following attributes:
+                    name string, category string, quantity int and amount float
+            customer (dict): a Map containing information about the customer: phone string, email: string,
+                    first_name string, last_name string, address string, town string, region string and country string
+            trx_id (str): if you want to include your transaction ID in the request
+
+        Returns:
+            TransactionResponse
+        """
+        endpoint = 'payment/airtime/'
+
+        body = {
+            'amount': amount,
+            'receiver': receiver,
+            'service': service,
+            'country': country,
+            'currency': currency,
+            'amount_currency': currency,
+            'merchant': merchant,
+        }
+
+        if trx_id:
+            body['trxID'] = trx_id
+
+        if location:
+            body['location'] = location
+
+        if customer:
+            body['customer'] = customer
+
+        if products:
+            body['products'] = products
+
+        return TransactionResponse(
+            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body))
+
     def make_yango_refill(self, amount: float, service: str, payer: str, driver_id: str, nonce=None,
                           country: Optional[str] = 'CM', currency: Optional[str] = 'XAF',
                           mode: Optional[str] = 'synchronous', location: Optional[Dict[str, str]] = None,
