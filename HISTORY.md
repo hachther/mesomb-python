@@ -1,3 +1,6 @@
+# 2.0.3 (2025-03-24)
+- Add purchase_airtime to depose airtime in an account
+
 # 2.0.2 (2025-03-12)
 - Rename identifier to id in WalletTransaction
 
