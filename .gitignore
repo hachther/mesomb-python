@@ -8,3 +8,4 @@ pymesomb.egg-info/
 _trial_temp
 venv
 .DS_Store
+openapi.json

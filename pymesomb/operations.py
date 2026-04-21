@@ -2,6 +2,10 @@ import json
 from abc import ABC
 from datetime import datetime
 from typing import Optional, Dict, List, Any
+try:
+    from typing import Unpack
+except ImportError:  # pragma: no cover
+    from typing_extensions import Unpack
 
 import requests
 
@@ -10,6 +14,11 @@ from pymesomb.models import (TransactionResponse, Application, Transaction, Wall
                              WalletTransaction, PaginatedWalletTransactions, ContributionResponse, Contribution,
                              ContactVerificationResponse, PaymentAppResponse, Customer,
                              Product, PaginatedCustomers, PaginatedProducts, CheckoutSession)
+from pymesomb.params import (CollectParams, DepositParams, AirtimeParams, YangoRefillParams, RefundParams,
+                             ContactInfoParams, WalletCreateParams, WalletUpdateParams, WalletAddMoneyParams,
+                             WalletRemoveMoneyParams, WalletTransferMoneyParams,
+                             FundraisingContributionParams, CustomerParams, ProductCreateParams,
+                             ProductUpdateParams, ProductPatchParams, CheckoutCreateParams)
 from pymesomb.signature import Signature
 from pymesomb.utils import RandomGenerator
 
@@ -174,32 +183,11 @@ class PaymentOperation(AOperation):
     def __init__(self, application_key, access_key, secret_key):
         super().__init__(application_key, access_key, secret_key)
 
-    def make_collect(self, amount: float, service: str, payer: str, nonce: Optional[str] = None, country: str = 'CM',
-                     currency: str = 'XAF', fees: bool = True, mode: str = 'synchronous', conversion: bool = False,
-                     location: Optional[Dict[str, str]] = None, products: Optional[List[Dict[str, str]]] = None,
-                     customer: Optional[Dict[str, str]] = None, trx_id: Optional[str] = None) -> TransactionResponse:
-        """Collect money a use account
+    def make_collect(self, **params: Unpack[CollectParams]) -> TransactionResponse:
+        """Collect money from a payer account.
 
         Args:
-            amount (float): amount to collect
-            service (str): payment service with the possible values MTN, ORANGE, AIRTEL
-            payer (str): account number to collect money
-            nonce (str, optional): unique string on each request
-            country (str): 2 letters country code of the service, configured during your service registration
-                        in MeSomb (Default value = 'CM')
-            currency (str): currency of your service depending on your country (Default value = 'XAF')
-            fees (bool): false if your want MeSomb fees to be computed and included in the amount to collect
-                        (Default value = True)
-            conversion (bool): true in case of foreign currently defined if you want to rely on MeSomb to convert
-                        the amount in the local currency (Default value = False)
-            location (dict): Map containing the location of the customer with the following attributes:
-                        town, region and location all string.
-            products (list): It is array of products. Each product are Map with the following attributes:
-                        name string, category string, quantity int and amount float
-            customer (dict): a Map containing information about the customer: phone string, email: string, first_name
-                        string, last_name string, address string, town string, region string and country string
-            trx_id (str): if you want to include your transaction ID in the request
-            mode (str): Mode of the transaction synchronous or asynchronous (Default value = 'synchronous')
+            **params: Collection parameters defined in ``CollectParams``.
 
         Returns:
             TransactionResponse
@@ -208,54 +196,40 @@ class PaymentOperation(AOperation):
         endpoint = 'payment/collect/'
 
         body = {
-            'amount': amount,
-            'payer': payer,
-            'fees': fees,
-            'service': service,
-            'country': country,
-            'currency': currency,
-            'amount_currency': currency,
-            'conversion': conversion
+            'amount': params['amount'],
+            'payer': params['payer'],
+            'fees': params.get('fees', True),
+            'service': params['service'],
+            'country': params.get('country', 'CM'),
+            'currency': params.get('currency', 'XAF'),
+            'amount_currency': params.get('currency', 'XAF'),
+            'conversion': params.get('conversion', False),
         }
-        if trx_id:
-            body['trxID'] = trx_id
+        if params.get('trx_id'):
+            body['trxID'] = params['trx_id']
 
-        if location:
-            body['location'] = location
+        if params.get('location'):
+            body['location'] = params['location']
 
-        if customer:
-            body['customer'] = customer
+        if params.get('customer'):
+            body['customer'] = params['customer']
 
-        if products:
-            body['products'] = products
+        if params.get('products'):
+            body['products'] = params['products']
 
         return TransactionResponse(
-            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body, mode))
+            self.execute_request(
+                'POST', endpoint, datetime.now(), params.get('nonce') or RandomGenerator.nonce(),
+                body, params.get('mode', 'synchronous')
+            )
+        )
 
-    def make_deposit(self, amount: float, service: str, receiver: str, nonce: Optional[str] = None,
-                     country: Optional[str] = 'CM', currency: Optional[str] = 'XAF', conversion: Optional[bool] = False,
-                     location: Optional[Dict[str, str]] = None, products: Optional[List[Dict[str, str]]] = None,
-                     customer: Optional[Dict[str, str]] = None, trx_id: Optional[str] = None) -> TransactionResponse:
+    def make_deposit(self, **params: Unpack[DepositParams]) -> TransactionResponse:
         """
-        Method to make deposit in a receiver mobile account.
+        Make a deposit to a receiver mobile account.
 
         Args:
-            amount (float): amount to collect
-            service (str): payment service with the possible values MTN, ORANGE, AIRTEL
-            receiver (str): account number to depose money
-            nonce (str, optional): unique string on each request
-            country (str, optional): 2 letters country code of the service configured during your service
-                    registration in MeSomb (Default value = 'CM')
-            currency (str, optional): currency of your service depending on your country (Default value = 'XAF')
-            conversion (bool, optional): true in case of foreign currently defined if you want to rely on
-                    MeSomb to convert the amount in the local currency (Default value = False)
-            location (dict): Map containing the location of the customer with the following attributes:
-                    town, region and location all string.
-            products (list): It is array of products. Each product are Map with the following attributes:
-                    name string, category string, quantity int and amount float
-            customer (dict): a Map containing information about the customer: phone string, email: string,
-                    first_name string, last_name string, address string, town string, region string and country string
-            trx_id (str): if you want to include your transaction ID in the request
+            **params: Deposit parameters defined in ``DepositParams``.
 
         Returns:
             TransactionResponse
@@ -263,53 +237,37 @@ class PaymentOperation(AOperation):
         endpoint = 'payment/deposit/'
 
         body = {
-            'amount': amount,
-            'receiver': receiver,
-            'service': service,
-            'country': country,
-            'currency': currency,
-            'amount_currency': currency,
-            'conversion': conversion,
+            'amount': params['amount'],
+            'receiver': params['receiver'],
+            'service': params['service'],
+            'country': params.get('country', 'CM'),
+            'currency': params.get('currency', 'XAF'),
+            'amount_currency': params.get('currency', 'XAF'),
+            'conversion': params.get('conversion', False),
         }
 
-        if trx_id:
-            body['trxID'] = trx_id
+        if params.get('trx_id'):
+            body['trxID'] = params['trx_id']
 
-        if location:
-            body['location'] = location
+        if params.get('location'):
+            body['location'] = params['location']
 
-        if customer:
-            body['customer'] = customer
+        if params.get('customer'):
+            body['customer'] = params['customer']
 
-        if products:
-            body['products'] = products
+        if params.get('products'):
+            body['products'] = params['products']
 
         return TransactionResponse(
-            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body))
+            self.execute_request('POST', endpoint, datetime.now(), params.get('nonce') or RandomGenerator.nonce(), body)
+        )
 
-    def purchase_airtime(self, amount: float, service: str, receiver: str, merchant: str, nonce: Optional[str] = None,
-                     country: Optional[str] = 'CM', currency: Optional[str] = 'XAF',
-                     location: Optional[Dict[str, str]] = None, products: Optional[List[Dict[str, str]]] = None,
-                     customer: Optional[Dict[str, str]] = None, trx_id: Optional[str] = None) -> TransactionResponse:
+    def purchase_airtime(self, **params: Unpack[AirtimeParams]) -> TransactionResponse:
         """
-        Method to make deposit in a receiver mobile account.
+        Purchase airtime for a receiver account.
 
         Args:
-            amount (float): amount to collect
-            service (str): payment service with the possible values MTN, ORANGE, AIRTEL
-            receiver (str): account number to depose money
-            nonce (str, optional): unique string on each request
-            country (str, optional): 2 letters country code of the service configured during your service
-                    registration in MeSomb (Default value = 'CM')
-            currency (str, optional): currency of your service depending on your country (Default value = 'XAF')
-            merchant (str): merchant number to depose money (MTN, ORANGE, AIRTEL, NEXTTEL)
-            location (dict): Map containing the location of the customer with the following attributes:
-                    town, region and location all string.
-            products (list): It is array of products. Each product are Map with the following attributes:
-                    name string, category string, quantity int and amount float
-            customer (dict): a Map containing information about the customer: phone string, email: string,
-                    first_name string, last_name string, address string, town string, region string and country string
-            trx_id (str): if you want to include your transaction ID in the request
+            **params: Airtime purchase parameters defined in ``AirtimeParams``.
 
         Returns:
             TransactionResponse
@@ -317,53 +275,37 @@ class PaymentOperation(AOperation):
         endpoint = 'payment/airtime/'
 
         body = {
-            'amount': amount,
-            'receiver': receiver,
-            'service': service,
-            'country': country,
-            'currency': currency,
-            'amount_currency': currency,
-            'merchant': merchant,
+            'amount': params['amount'],
+            'receiver': params['receiver'],
+            'service': params['service'],
+            'country': params.get('country', 'CM'),
+            'currency': params.get('currency', 'XAF'),
+            'amount_currency': params.get('currency', 'XAF'),
+            'merchant': params['merchant'],
         }
 
-        if trx_id:
-            body['trxID'] = trx_id
+        if params.get('trx_id'):
+            body['trxID'] = params['trx_id']
 
-        if location:
-            body['location'] = location
+        if params.get('location'):
+            body['location'] = params['location']
 
-        if customer:
-            body['customer'] = customer
+        if params.get('customer'):
+            body['customer'] = params['customer']
 
-        if products:
-            body['products'] = products
+        if params.get('products'):
+            body['products'] = params['products']
 
         return TransactionResponse(
-            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body))
+            self.execute_request('POST', endpoint, datetime.now(), params.get('nonce') or RandomGenerator.nonce(), body)
+        )
 
-    def make_yango_refill(self, amount: float, service: str, payer: str, driver_id: str, nonce=None,
-                          country: Optional[str] = 'CM', currency: Optional[str] = 'XAF',
-                          mode: Optional[str] = 'synchronous', location: Optional[Dict[str, str]] = None,
-                          customer: Optional[Dict[str, str]] = None,
-                          trx_id: Optional[str] = None) -> TransactionResponse:
+    def make_yango_refill(self, **params: Unpack[YangoRefillParams]) -> TransactionResponse:
         """
         Method to refill a Yango account.
 
         Args:
-            amount (float): amount to collect
-            service (str): payment service with the possible values MTN, ORANGE, AIRTEL
-            payer (str): account number to depose money
-            driver_id (str): the driver ID
-            nonce (str, optional): unique string on each request
-            country (str): 2 letters country code of the service configured during your service registration in
-                    MeSomb (Default value = 'CM')
-            currency (str): currency of your service depending on your country (Default value = 'XAF')
-            mode (str): Mode of the transaction synchronous or asynchronous (Default value = 'synchronous')
-            location (dict): Map containing the location of the customer with the following attributes:
-                    town, region and location all string.
-            customer (dict): a Map containing information about the customer: phone string, email: string,
-                    first_name string, last_name string, address string, town string, region string and country string
-            trx_id (str): if you want to include your transaction ID in the request
+            **params: Yango refill parameters defined in ``YangoRefillParams``.
 
         Returns:
           TransactionResponse
@@ -372,26 +314,30 @@ class PaymentOperation(AOperation):
         endpoint = 'payment/yango/refill/'
 
         body = {
-            'amount': amount,
-            'payer': payer,
-            'service': service,
-            'driver_id': driver_id,
-            'country': country,
-            'currency': currency,
-            'amount_currency': currency,
+            'amount': params['amount'],
+            'payer': params['payer'],
+            'service': params['service'],
+            'driver_id': params['driver_id'],
+            'country': params.get('country', 'CM'),
+            'currency': params.get('currency', 'XAF'),
+            'amount_currency': params.get('currency', 'XAF'),
         }
 
-        if trx_id:
-            body['trxID'] = trx_id
+        if params.get('trx_id'):
+            body['trxID'] = params['trx_id']
 
-        if location:
-            body['location'] = location
+        if params.get('location'):
+            body['location'] = params['location']
 
-        if customer:
-            body['customer'] = customer
+        if params.get('customer'):
+            body['customer'] = params['customer']
 
         return TransactionResponse(
-            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body, mode))
+            self.execute_request(
+                'POST', endpoint, datetime.now(), params.get('nonce') or RandomGenerator.nonce(),
+                body, params.get('mode', 'synchronous')
+            )
+        )
 
     def get_status(self) -> Application:
         """Get the current status of your service on MeSomb
@@ -433,55 +379,46 @@ class PaymentOperation(AOperation):
         endpoint = f"payment/transactions/check/?ids={','.join(ids)}&source={source}"
         return [Transaction(item) for item in self.execute_request('GET', endpoint, datetime.now())]
 
-    def refund_transaction(self, trx_id: str, amount: Optional[float] = None, conversion: Optional[bool] = None,
-                           currency: str = None) -> TransactionResponse:
+    def refund_transaction(self, **params: Unpack[RefundParams]) -> TransactionResponse:
         """
         Refund a transaction in MeSomb
 
         Args:
-            trx_id: the transaction identifier
-            amount: the amount to refund
-            conversion: true if you want to rely on MeSomb to convert the amount in the local
-                currency (Default value = None)
-            currency: currency of your service depending on your country (Default value = None)
+            **params: Refund parameters defined in ``RefundParams``.
         Returns:
             TransactionResponse
         """
         endpoint = f'payment/refund/'
 
-        body = {'id': trx_id}
-        if amount:
-            body['amount'] = amount
-        if currency:
-            body['currency'] = currency
-            body['amount_currency'] = currency
-        if conversion:
-            body['conversion'] = conversion
+        body = {'id': params['trx_id']}
+        if params.get('amount') is not None:
+            body['amount'] = params['amount']
+        if params.get('currency'):
+            body['currency'] = params['currency']
+            body['amount_currency'] = params['currency']
+        if params.get('conversion') is not None:
+            body['conversion'] = params['conversion']
 
         return TransactionResponse(self.execute_request('POST', endpoint, datetime.now(), RandomGenerator.nonce(),
                                                        body))
 
-    def check_contact_info(self, service_key: str, provider: Optional[str] = None, country: str = 'CM',
-                           nonce: Optional[str] = None) -> ContactVerificationResponse:
+    def check_contact_info(self, **params: Unpack[ContactInfoParams]) -> ContactVerificationResponse:
         """
         Check subscriber basic information.
 
         Args:
-            service_key (str): Subscriber phone number or account key.
-            provider (str, optional): Provider to use if known (MTN, ORANGE, AIRTEL, etc).
-            country (str): 2 letters country code (Default value = 'CM').
-            nonce (str, optional): Unique string for each request.
+            **params: Contact lookup parameters defined in ``ContactInfoParams``.
 
         Returns:
             ContactVerificationResponse
         """
         endpoint = 'payment/contact/info/'
-        body = {'service_key': service_key, 'country': country}
-        if provider:
-            body['provider'] = provider
+        body = {'service_key': params['service_key'], 'country': params.get('country', 'CM')}
+        if params.get('provider'):
+            body['provider'] = params['provider']
 
         return ContactVerificationResponse(
-            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
+            self.execute_request('POST', endpoint, datetime.now(), params.get('nonce') or RandomGenerator.nonce(), body)
         )
 
     def get_pricing(self) -> PaymentAppResponse:
@@ -505,21 +442,12 @@ class WalletOperation(AOperation):
     def __init__(self, provider_key, access_key, secret_key):
         super().__init__(provider_key, access_key, secret_key)
 
-    def create_wallet(self, last_name: str, phone_number: str, gender: str, first_name: Optional[str] = None,
-                      country: Optional[str] = 'CM', email: Optional[str] = None, nonce: Optional[str] = None,
-                      number: Optional[str] = None):
+    def create_wallet(self, **params: Unpack[WalletCreateParams]):
         """
         Create a wallet in MeSomb
 
         Args:
-            last_name (str): the last name of the wallet owner
-            phone_number (str): the phone number of the wallet owner
-            gender (str): the gender of the wallet owner
-            first_name (str, optional): the first name of the wallet owner
-            country (str, optional): the country of the wallet owner (Default value = 'CM')
-            email (str, optional): the email of the wallet owner
-            nonce (str, optional): the nonce of the request (Default value = None)
-            number (str, optional): the unique numeric wallet identifier, if not set we will generate one for you
+            **params: Wallet creation parameters defined in ``WalletCreateParams``.
 
         Returns:
             Wallet
@@ -527,38 +455,30 @@ class WalletOperation(AOperation):
         endpoint = 'wallet/wallets/'
 
         body = {
-            'last_name': last_name,
-            'phone_number': phone_number,
-            'gender': gender,
-            'country': country,
+            'last_name': params['last_name'],
+            'phone_number': params['phone_number'],
+            'gender': params['gender'],
+            'country': params.get('country', 'CM'),
         }
 
-        if first_name:
-            body['first_name'] = first_name
+        if params.get('first_name'):
+            body['first_name'] = params['first_name']
 
-        if email:
-            body['email'] = email
+        if params.get('email'):
+            body['email'] = params['email']
 
-        if number:
-            body['number'] = number
+        if params.get('number'):
+            body['number'] = params['number']
 
-        return Wallet(self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body))
+        return Wallet(self.execute_request('POST', endpoint, datetime.now(), params.get('nonce') or RandomGenerator.nonce(), body))
 
-    def update_wallet(self, identifier: int, last_name: str, phone_number: str, gender: str,
-                      first_name: Optional[str] = None, country: Optional[str] = 'CM', email: Optional[str] = None,
-                      nonce: Optional[str] = None):
+    def update_wallet(self, identifier: int, **params: Unpack[WalletUpdateParams]):
         """
-        Create a wallet in MeSomb
+        Update a wallet in MeSomb.
 
         Args:
             identifier: the identifier of the wallet
-            last_name (str): the last name of the wallet owner
-            phone_number (str): the phone number of the wallet owner
-            gender (str): the gender of the wallet owner
-            first_name (str, optional): the first name of the wallet owner
-            country (str, optional): the country of the wallet owner (Default value = 'CM')
-            email (str, optional): the email of the wallet owner
-            nonce (str, optional): the nonce of the request (Default value = None)
+            **params: Wallet update parameters defined in ``WalletUpdateParams``.
 
         Returns:
             Wallet
@@ -567,19 +487,19 @@ class WalletOperation(AOperation):
         endpoint = f'wallet/wallets/{identifier}/'
 
         body = {
-            'last_name': last_name,
-            'phone_number': phone_number,
-            'gender': gender,
-            'country': country,
+            'last_name': params['last_name'],
+            'phone_number': params['phone_number'],
+            'gender': params['gender'],
+            'country': params.get('country', 'CM'),
         }
 
-        if first_name:
-            body['first_name'] = first_name
+        if params.get('first_name'):
+            body['first_name'] = params['first_name']
 
-        if email:
-            body['email'] = email
+        if params.get('email'):
+            body['email'] = params['email']
 
-        return Wallet(self.execute_request('PUT', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body))
+        return Wallet(self.execute_request('PUT', endpoint, datetime.now(), params.get('nonce') or RandomGenerator.nonce(), body))
 
     def get_wallet(self, identifier: int):
         """
@@ -609,14 +529,13 @@ class WalletOperation(AOperation):
 
         return self.execute_request('DELETE', endpoint, datetime.now())
 
-    def add_money(self, wallet: int, amount: float, message: Optional[str] = None, external_id: Optional[str] = None) -> WalletTransaction:
+    def add_money(self, wallet: int, **params: Unpack[WalletAddMoneyParams]) -> WalletTransaction:
         """
         Add money to a wallet
 
         Args:
             wallet: the identifier of the wallet
-            amount: the amount to add to the wallet
-            message: the message to add to the transaction (Default value = None)
+            **params: Wallet credit parameters defined in ``WalletAddMoneyParams``.
 
         Returns:
             Wallet
@@ -624,64 +543,60 @@ class WalletOperation(AOperation):
 
         endpoint = f'wallet/wallets/{wallet}/adjust/'
 
-        data = {'amount': amount, 'direction': 1}
+        data = {'amount': params['amount'], 'direction': 1}
 
-        if message:
-            data['message'] = message
+        if params.get('message'):
+            data['message'] = params['message']
 
-        if external_id:
-            data['trxID'] = external_id
+        if params.get('external_id'):
+            data['trxID'] = params['external_id']
 
         return WalletTransaction(self.execute_request('POST', endpoint, datetime.now(), RandomGenerator.nonce(), data))
 
-    def remove_money(self, wallet: int, amount: float, force: Optional[bool] = False, message: Optional[str] = None, external_id: Optional[str] = None) -> WalletTransaction:
+    def remove_money(self, wallet: int, **params: Unpack[WalletRemoveMoneyParams]) -> WalletTransaction:
         """
         Remove money from a wallet
 
         Args:
             wallet: the identifier of the wallet
-            amount: the amount to remove from the wallet
-            force: to force the operation if balance is not enough (Default value = False)
-            message: the message to add to the transaction (Default value = None)
+            **params: Wallet debit parameters defined in ``WalletRemoveMoneyParams``.
 
         Returns:
             Wallet
         """
         endpoint = f'wallet/wallets/{wallet}/adjust/'
 
-        data = {'amount': amount, 'direction': -1, 'force': force}
+        data = {'amount': params['amount'], 'direction': -1, 'force': params.get('force', False)}
 
-        if message:
-            data['message'] = message
+        if params.get('message'):
+            data['message'] = params['message']
 
-        if external_id:
-            data['trxID'] = external_id
+        if params.get('external_id'):
+            data['trxID'] = params['external_id']
 
         return WalletTransaction(self.execute_request('POST', endpoint, datetime.now(), RandomGenerator.nonce(), data))
 
-    def transfert_money(self, source: int, dest: int, amount: float,
-                        force: Optional[bool] = False, message: Optional[str] = None, external_id: Optional[str] = None) -> WalletTransaction:
+    def transfert_money(self, source: int, dest: int, **params: Unpack[WalletTransferMoneyParams]) -> WalletTransaction:
         """
         Transfer money from a wallet to another
 
         Args:
             source: the identifier of the source wallet
             dest: the identifier of the destination wallet
-            amount: the amount to transfer
-            force: to force the operation if balance is not enough (Default value = False)
+            **params: Transfer parameters defined in ``WalletTransferMoneyParams``.
 
         Returns:
             Wallet
         """
         endpoint = f'wallet/wallets/{source}/transfer/'
 
-        data = {'amount': amount, 'destination': dest, 'force': force}
+        data = {'amount': params['amount'], 'destination': dest, 'force': params.get('force', False)}
 
-        if message:
-            data['message'] = message
+        if params.get('message'):
+            data['message'] = params['message']
 
-        if external_id:
-            data['trxID'] = external_id
+        if params.get('external_id'):
+            data['trxID'] = params['external_id']
 
         return WalletTransaction(self.execute_request('POST', endpoint, datetime.now(), RandomGenerator.nonce(), data))
 
@@ -753,69 +668,55 @@ class FundraisingOperation(AOperation):
     """
     service = 'fundraising'
 
-    def make_contribution(self, amount: float, service: str, payer: str, nonce: Optional[str] = None,
-                          country: str = 'CM',currency: str = 'XAF', mode: str = 'synchronous',
-                          conversion: bool = False, anonymous: bool = False, accept_terms: bool = True,
-                          location: Optional[Dict[str, str]] = None, contact: Optional[Dict[str, str]] = None,
-                          full_name: Optional[Dict[str, str]] = None,
-                          trx_id: Optional[str] = None) -> ContributionResponse:
+    def make_contribution(self, **params: Unpack[FundraisingContributionParams]) -> ContributionResponse:
         """
         Make a contribution to a fundraising campaign
 
         Args:
-            amount: amount to contribute
-            service: payment service with the possible values MTN, ORANGE, AIRTEL
-            payer: account number to contribute
-            nonce: unique string on each request
-            country: 2 letters country code of the service, configured during your service registration in MeSomb
-            currency: currency of your service depending on your country
-            conversion: true in case of foreign currently defined if you want to rely on MeSomb to
-                convert the amount in the local currency
-            anonymous: true if you want to contribute anonymously
-            accept_terms: true if you accept the terms of the contribution
-            location: Map containing the location of the customer with the following attributes:
-                town, region and location all string.
-            contact: a Map containing information about the customer: phone_number string, email: string
-            full_name: a Map containing information about the customer: first_name string, last_name string
-            trx_id: if you want to include your transaction ID in the request
+            **params: Contribution parameters defined in ``FundraisingContributionParams``.
 
         Returns:
             ContributionResponse
 
         """
-        assert amount > 0, 'Amount must be greater than 0'
-        if not anonymous:
-            assert full_name, 'Full name is required'
-            assert contact, 'Contact is required'
+        assert params['amount'] > 0, 'Amount must be greater than 0'
+        if not params.get('anonymous', False):
+            assert params.get('full_name'), 'Full name is required'
+            assert params.get('contact'), 'Contact is required'
 
         endpoint = 'fundraising/contribute/'
 
+        currency = params.get('currency', 'XAF')
         body = {
-            'amount': amount,
-            'payer': payer,
-            'service': service,
-            'country': country,
+            'amount': params['amount'],
+            'payer': params['payer'],
+            'service': params['service'],
+            'country': params.get('country', 'CM'),
             'currency': currency,
             'amount_currency': currency,
-            'conversion': conversion,
-            'anonymous': anonymous,
-            'accept_terms': accept_terms,
+            'conversion': params.get('conversion', False),
+            'anonymous': params.get('anonymous', False),
+            'accept_terms': params.get('accept_terms', True),
         }
 
-        if trx_id:
-            body['trxID'] = trx_id
+        if params.get('trx_id'):
+            body['trxID'] = params['trx_id']
 
-        if location:
-            body['location'] = location
+        if params.get('location'):
+            body['location'] = params['location']
 
-        if contact:
-            body['contact'] = contact
+        if params.get('contact'):
+            body['contact'] = params['contact']
 
-        if full_name:
-            body['full_name'] = full_name
+        if params.get('full_name'):
+            body['full_name'] = params['full_name']
 
         return ContributionResponse(
-            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body, mode))
+            self.execute_request(
+                'POST', endpoint, datetime.now(), params.get('nonce') or RandomGenerator.nonce(),
+                body, params.get('mode', 'synchronous')
+            )
+        )
 
     def get_contributions(self, ids, source='MESOMB') -> List[Contribution]:
         """
@@ -872,40 +773,19 @@ class CustomerOperation(AOperation):
 
         return PaginatedCustomers(self.execute_request('GET', endpoint, datetime.now()))
 
-    def create(self, email: Optional[str] = None, phone: Optional[str] = None, town: Optional[str] = None,
-                        region: Optional[str] = None, country: Optional[str] = None,
-                        first_name: Optional[str] = None, last_name: Optional[str] = None,
-                        address: Optional[Dict[str, Any]] = None, metadata: Optional[Dict[str, Any]] = None,
-                        description: Optional[str] = None, nonce: Optional[str] = None) -> Customer:
+    def create(self, **params: Unpack[CustomerParams]) -> Customer:
         """
         Create a customer for the current application.
+
+        Args:
+            **params: Customer creation parameters defined in ``CustomerParams``.
 
         Returns:
             Customer
         """
         endpoint = 'customers/'
-        body = {}
-
-        if email:
-            body['email'] = email
-        if phone:
-            body['phone'] = phone
-        if town:
-            body['town'] = town
-        if region:
-            body['region'] = region
-        if country:
-            body['country'] = country
-        if first_name:
-            body['first_name'] = first_name
-        if last_name:
-            body['last_name'] = last_name
-        if address:
-            body['address'] = address
-        if metadata:
-            body['metadata'] = metadata
-        if description:
-            body['description'] = description
+        nonce = params.get('nonce')
+        body = {k: v for k, v in params.items() if k != 'nonce' and v is not None}
 
         return Customer(
             self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
@@ -925,79 +805,39 @@ class CustomerOperation(AOperation):
 
         return Customer(self.execute_request('GET', endpoint, datetime.now()))
 
-    def update(self, identifier: int, email: Optional[str] = None, phone: Optional[str] = None,
-                        town: Optional[str] = None, region: Optional[str] = None, country: Optional[str] = None,
-                        first_name: Optional[str] = None, last_name: Optional[str] = None,
-                        address: Optional[Dict[str, Any]] = None, metadata: Optional[Dict[str, Any]] = None,
-                        description: Optional[str] = None, nonce: Optional[str] = None) -> Customer:
+    def update(self, identifier: int, **params: Unpack[CustomerParams]) -> Customer:
         """
         Update a customer created by the current application.
+
+        Args:
+            identifier (int): the identifier of the customer
+            **params: Customer update parameters defined in ``CustomerParams``.
 
         Returns:
             Customer
         """
         endpoint = f'customers/{identifier}/'
-        body = {}
-
-        if email:
-            body['email'] = email
-        if phone:
-            body['phone'] = phone
-        if town:
-            body['town'] = town
-        if region:
-            body['region'] = region
-        if country:
-            body['country'] = country
-        if first_name:
-            body['first_name'] = first_name
-        if last_name:
-            body['last_name'] = last_name
-        if address:
-            body['address'] = address
-        if metadata:
-            body['metadata'] = metadata
-        if description:
-            body['description'] = description
+        nonce = params.get('nonce')
+        body = {k: v for k, v in params.items() if k != 'nonce' and v is not None}
 
         return Customer(
             self.execute_request('PUT', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
         )
 
-    def patch(self, identifier: int, email: Optional[str] = None, phone: Optional[str] = None,
-                       town: Optional[str] = None, region: Optional[str] = None, country: Optional[str] = None,
-                       first_name: Optional[str] = None, last_name: Optional[str] = None,
-                       address: Optional[Dict[str, Any]] = None, metadata: Optional[Dict[str, Any]] = None,
-                       description: Optional[str] = None, nonce: Optional[str] = None) -> Customer:
+    def patch(self, identifier: int, **params: Unpack[CustomerParams]) -> Customer:
         """
         Partially update a customer created by the current application.
+
+        Args:
+            identifier (int): the identifier of the customer
+            **params: Customer patch parameters defined in ``CustomerParams``.
 
         Returns:
             Customer
         """
         endpoint = f'customers/{identifier}/'
-        body = {}
-
-        if email:
-            body['email'] = email
-        if phone:
-            body['phone'] = phone
-        if town:
-            body['town'] = town
-        if region:
-            body['region'] = region
-        if country:
-            body['country'] = country
-        if first_name:
-            body['first_name'] = first_name
-        if last_name:
-            body['last_name'] = last_name
-        if address:
-            body['address'] = address
-        if metadata:
-            body['metadata'] = metadata
-        if description:
-            body['description'] = description
+        nonce = params.get('nonce')
+        body = {k: v for k, v in params.items() if k != 'nonce' and v is not None}
 
         return Customer(
             self.execute_request('PATCH', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
@@ -1038,31 +878,19 @@ class ProductOperation(AOperation):
 
         return PaginatedProducts(self.execute_request('GET', endpoint, datetime.now()))
 
-    def create(self, name: str, category: Optional[str] = None, description: Optional[str] = None,
-                       image: Optional[str] = None, default_price: Optional[str] = None,
-                       price_type: Optional[str] = None, nonce: Optional[str] = None) -> Product:
+    def create(self, **params: Unpack[ProductCreateParams]) -> Product:
         """
         Create a product for the current application.
 
         Args:
-            name (str): the product name
+            **params: Product creation parameters defined in ``ProductCreateParams``.
 
         Returns:
             Product
         """
         endpoint = 'products/'
-        body = {'name': name}
-
-        if category:
-            body['category'] = category
-        if description:
-            body['description'] = description
-        if image:
-            body['image'] = image
-        if default_price:
-            body['default_price'] = default_price
-        if price_type:
-            body['price_type'] = price_type
+        nonce = params.get('nonce')
+        body = {k: v for k, v in params.items() if k != 'nonce' and v is not None}
 
         return Product(
             self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
@@ -1082,59 +910,39 @@ class ProductOperation(AOperation):
 
         return Product(self.execute_request('GET', endpoint, datetime.now()))
 
-    def update(self, identifier: str, name: str, category: Optional[str] = None,
-                       description: Optional[str] = None, image: Optional[str] = None,
-                       default_price: Optional[str] = None, price_type: Optional[str] = None,
-                       nonce: Optional[str] = None) -> Product:
+    def update(self, identifier: str, **params: Unpack[ProductUpdateParams]) -> Product:
         """
         Update a product created by the current application.
+
+        Args:
+            identifier (str): the identifier of the product
+            **params: Product update parameters defined in ``ProductUpdateParams``.
 
         Returns:
             Product
         """
         endpoint = f'products/{identifier}/'
-        body = {'name': name}
-
-        if category:
-            body['category'] = category
-        if description:
-            body['description'] = description
-        if image:
-            body['image'] = image
-        if default_price:
-            body['default_price'] = default_price
-        if price_type:
-            body['price_type'] = price_type
+        nonce = params.get('nonce')
+        body = {k: v for k, v in params.items() if k != 'nonce' and v is not None}
 
         return Product(
             self.execute_request('PUT', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
         )
 
-    def patch(self, identifier: str, name: Optional[str] = None, category: Optional[str] = None,
-                      description: Optional[str] = None, image: Optional[str] = None,
-                      default_price: Optional[str] = None, price_type: Optional[str] = None,
-                      nonce: Optional[str] = None) -> Product:
+    def patch(self, identifier: str, **params: Unpack[ProductPatchParams]) -> Product:
         """
         Partially update a product created by the current application.
+
+        Args:
+            identifier (str): the identifier of the product
+            **params: Product patch parameters defined in ``ProductPatchParams``.
 
         Returns:
             Product
         """
         endpoint = f'products/{identifier}/'
-        body = {}
-
-        if name:
-            body['name'] = name
-        if category:
-            body['category'] = category
-        if description:
-            body['description'] = description
-        if image:
-            body['image'] = image
-        if default_price:
-            body['default_price'] = default_price
-        if price_type:
-            body['price_type'] = price_type
+        nonce = params.get('nonce')
+        body = {k: v for k, v in params.items() if k != 'nonce' and v is not None}
 
         return Product(
             self.execute_request('PATCH', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
@@ -1172,60 +980,21 @@ class CheckOutOperation(AOperation):
 
         return CheckoutSession(self.execute_request('GET', endpoint, datetime.now()))
 
-    def create(self, amount: float, success_url: str, cancel_url: str, nonce: Optional[str] = None,
-                                mode: str = 'payment', currency: str = 'XAF', description: Optional[str] = None,
-                                client_reference_id: Optional[str] = None, expires_in: Optional[int] = None,
-                                customer_id: Optional[str] = None, customer: Optional[Dict[str, Any]] = None,
-                                location: Optional[Dict[str, str]] = None,
-                                products: Optional[List[Dict[str, Any]]] = None,
-                                metadata: Optional[Dict[str, Any]] = None) -> CheckoutSession:
+    def create(self, **params: Unpack[CheckoutCreateParams]) -> CheckoutSession:
         """
         Create a checkout session.
 
         Args:
-            amount (int): amount in minor unit (e.g cents)
-            success_url (str): redirect URL on successful payment
-            cancel_url (str): redirect URL on canceled payment
-            nonce (str, optional): unique string on each request
-            mode (str): checkout mode (Default value = 'payment')
-            currency (str): three-letter ISO currency code (Default value = 'XAF')
-            description (str, optional): payment description
-            client_reference_id (str, optional): your internal order reference
-            expires_in (int, optional): expiration in seconds
-            customer_id (str, optional): existing customer identifier
-            customer (dict, optional): customer information to prefill
-            location (dict, optional): optional location information
-            products (list, optional): optional product line items
-            metadata (dict, optional): additional key-value metadata
+            **params: Checkout creation parameters defined in ``CheckoutCreateParams``.
 
         Returns:
             CheckoutSession
         """
         endpoint = 'checkout/sessions/'
-        body = {
-            'mode': mode,
-            'amount': amount,
-            'currency': currency,
-            'success_url': success_url,
-            'cancel_url': cancel_url,
-        }
-
-        if description:
-            body['description'] = description
-        if client_reference_id:
-            body['client_reference_id'] = client_reference_id
-        if expires_in:
-            body['expires_in'] = expires_in
-        if customer_id:
-            body['customer_id'] = customer_id
-        if customer:
-            body['customer'] = customer
-        if location:
-            body['location'] = location
-        if products:
-            body['products'] = products
-        if metadata:
-            body['metadata'] = metadata
+        nonce = params.get('nonce')
+        body = {k: v for k, v in params.items() if k != 'nonce' and v is not None}
+        body.setdefault('mode', 'payment')
+        body.setdefault('currency', 'XAF')
 
         return CheckoutSession(
             self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
