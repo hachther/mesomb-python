@@ -22,6 +22,23 @@ class Location:
         self.country: Optional[str] = data.get('country')
 
 
+class Address:
+    """
+    Represents a postal address.
+
+    Args:
+        data (dict): The address data.
+    """
+
+    def __init__(self, data: Dict[str, Any]):
+        self.country: Optional[str] = data.get('country')
+        self.region: Optional[str] = data.get('region')
+        self.town: Optional[str] = data.get('town')
+        self.line1: Optional[str] = data.get('line1')
+        self.line2: Optional[str] = data.get('line2')
+        self.zip: Optional[str] = data.get('zip')
+
+
 class Customer:
     """
     Represents a customer.
@@ -30,6 +47,7 @@ class Customer:
         data (dict): The customer data.
 
     Attributes:
+        identifier (str): The identifier of the customer.
         email (str, optional): The email of the customer.
         phone (str, optional): The phone number of the customer.
         town (str, optional): The town of the customer.
@@ -37,10 +55,13 @@ class Customer:
         country (str, optional): The country of the customer.
         first_name (str, optional): The first name of the customer.
         last_name (str): The last name of the customer.
-        address (str, optional): The address of the customer.
+        address (Address, optional): The address of the customer.
+        metadata (dict, optional): The metadata of the customer.
+        description (str, optional): The description of the customer.
     """
 
     def __init__(self, data):
+        self.identifier: str = data['identifier']
         self.email: Optional[str] = data.get('email', None)
         self.phone: Optional[str] = data.get('phone', None)
         self.town: Optional[str] = data.get('town', None)
@@ -48,7 +69,10 @@ class Customer:
         self.country: Optional[str] = data.get('country', None)
         self.first_name: Optional[str] = data.get('first_name', None)
         self.last_name: str = data['last_name']
-        self.address: Optional[str] = data.get('address', None)
+        self.metadata: Dict[str, Any] = data.get('metadata', {})
+        self.description: Optional[str] = data.get('description')
+        if data.get('address', None):
+            self.address: str = Address(data['address'])
 
 
 class Product:
@@ -64,6 +88,10 @@ class Product:
         category (str, optional): The category of the product.
         quantity (int, optional): The quantity of the product.
         amount (float, optional): The amount of the product.
+        description (str, optional): The description of the product.
+        image (str, optional): The image of the product.
+        default_price (str, optional): The default price of the product.
+        price_type(str, optional): The price type of the product.
     """
 
     def __init__(self, data):
@@ -72,6 +100,50 @@ class Product:
         self.category: Optional[str] = data.get('category', 'category')
         self.quantity: Optional[int] = data.get('quantity', None)
         self.amount: Optional[float] = data.get('amount', None)
+        self.description: Optional[str] = data.get('description')
+        self.image: Optional[str] = data.get('image')
+        self.default_price: Optional[str] = data.get('default_price')
+        self.price_type: Optional[str] = data.get('price_type')
+
+
+class CheckoutSessionProduct:
+    """
+    Represents a product line in a checkout session.
+    """
+
+    def __init__(self, data: Dict[str, Any]):
+        self.product: Product = Product(data['product'])
+        self.quantity: Optional[int] = data.get('quantity')
+        self.unit_price: Optional[str] = data.get('unit_price')
+        self.subtotal: Optional[str] = data.get('subtotal')
+
+
+class CheckoutSession:
+    """
+    Represents a checkout session.
+    """
+
+    def __init__(self, data: Dict[str, Any]):
+        self.id: str = data['id']
+        self.object: str = data['object']
+        self.status: str = data['status']
+        self.amount: int = data['amount']
+        self.currency: Optional[str] = data.get('currency')
+        self.description: Optional[str] = data.get('description')
+        self.checkout_url: str = data['checkout_url']
+        self.success_url: str = data['success_url']
+        self.cancel_url: str = data['cancel_url']
+        self.allowed_payment_methods: Any = data.get('allowed_payment_methods')
+        self.customer: Customer = Customer(data['customer'])
+        self.attempt_count: int = data['attempt_count']
+        self.failure_code: Optional[str] = data.get('failure_code')
+        self.failure_message: Optional[str] = data.get('failure_message')
+        self.products: List[CheckoutSessionProduct] = [CheckoutSessionProduct(p) for p in data.get('products', [])]
+        self.metadata: Any = data.get('metadata')
+        self.client_reference_id: Optional[str] = data.get('client_reference_id')
+        self.expires_at: datetime = datetime.fromisoformat(data['expires_at'].replace('Z', '+00:00'))
+        self.created_at: datetime = datetime.fromisoformat(data['created_at'].replace('Z', '+00:00'))
+        self.updated_at: datetime = datetime.fromisoformat(data['updated_at'].replace('Z', '+00:00'))
 
 
 class ATransaction(ABC):
@@ -218,6 +290,48 @@ class TransactionResponse:
     def is_transaction_success(self):
         """ """
         return self.transaction.is_success()
+
+    def get_data(self) -> Dict[str, Any]:
+        return self._data
+
+
+class ContactVerificationResponse:
+    """
+    Represents the response returned by contact verification endpoint.
+
+    Args:
+        data (dict): The response data from the server.
+
+    Attributes:
+        first_name (str, optional): Subscriber first name.
+        last_name (str, optional): Subscriber last name.
+    """
+
+    def __init__(self, data: Dict[str, Any]):
+        self._data = data
+        self.first_name: Optional[str] = data.get('first_name')
+        self.last_name: Optional[str] = data.get('last_name')
+
+    def get_data(self) -> Dict[str, Any]:
+        return self._data
+
+
+class PaymentAppResponse:
+    """
+    Represents the response returned by pricing endpoint.
+
+    Args:
+        data (dict): The response data from the server.
+
+    Attributes:
+        key (str): The application key.
+        name (str): The application name.
+    """
+
+    def __init__(self, data: Dict[str, Any]):
+        self._data = data
+        self.key: str = data['key']
+        self.name: str = data['name']
 
     def get_data(self) -> Dict[str, Any]:
         return self._data
@@ -402,6 +516,26 @@ class PaginatedWalletTransactions(APaginated):
     def __init__(self, data: Dict[str, Any]):
         super().__init__(data)
         self.results: List[WalletTransaction] = [WalletTransaction(t) for t in data['results']]
+
+
+class PaginatedCustomers(APaginated):
+    """
+    Represents a paginated response of merchant customers.
+    """
+
+    def __init__(self, data: Dict[str, Any]):
+        super().__init__(data)
+        self.results: List[Customer] = [Customer(c) for c in data['results']]
+
+
+class PaginatedProducts(APaginated):
+    """
+    Represents a paginated response of merchant products.
+    """
+
+    def __init__(self, data: Dict[str, Any]):
+        super().__init__(data)
+        self.results: List[Product] = [Product(p) for p in data['results']]
 
 
 class Contribution(ATransaction):

@@ -8,7 +8,7 @@ with open('HISTORY.md') as history_file:
 
 setup(
     name='pymesomb',
-    version='2.0.3',
+    version='2.1.0',
     description='Python client for MeSomb services.',
     long_description_content_type="text/markdown",
     long_description=README + '\n\n' + HISTORY,

@@ -7,7 +7,9 @@ import requests
 
 from pymesomb import mesomb, __version__
 from pymesomb.models import (TransactionResponse, Application, Transaction, Wallet, PaginatedWallets,
-                             WalletTransaction, PaginatedWalletTransactions, ContributionResponse, Contribution)
+                             WalletTransaction, PaginatedWalletTransactions, ContributionResponse, Contribution,
+                             ContactVerificationResponse, PaymentAppResponse, Customer,
+                             Product, PaginatedCustomers, PaginatedProducts, CheckoutSession)
 from pymesomb.signature import Signature
 from pymesomb.utils import RandomGenerator
 
@@ -156,7 +158,11 @@ class AOperation(ABC):
         if status_code >= 400:
             self.process_client_exception(response)
 
-        return response.json()
+        # Some endpoints (e.g. DELETE 204) return an empty body.
+        try:
+            return response.json()
+        except ValueError:
+            return {}
 
 
 class PaymentOperation(AOperation):
@@ -455,6 +461,40 @@ class PaymentOperation(AOperation):
         return TransactionResponse(self.execute_request('POST', endpoint, datetime.now(), RandomGenerator.nonce(),
                                                        body))
 
+    def check_contact_info(self, service_key: str, provider: Optional[str] = None, country: str = 'CM',
+                           nonce: Optional[str] = None) -> ContactVerificationResponse:
+        """
+        Check subscriber basic information.
+
+        Args:
+            service_key (str): Subscriber phone number or account key.
+            provider (str, optional): Provider to use if known (MTN, ORANGE, AIRTEL, etc).
+            country (str): 2 letters country code (Default value = 'CM').
+            nonce (str, optional): Unique string for each request.
+
+        Returns:
+            ContactVerificationResponse
+        """
+        endpoint = 'payment/contact/info/'
+        body = {'service_key': service_key, 'country': country}
+        if provider:
+            body['provider'] = provider
+
+        return ContactVerificationResponse(
+            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
+        )
+
+    def get_pricing(self) -> PaymentAppResponse:
+        """
+        Get pricing metadata of the payment application.
+
+        Returns:
+            PaymentAppResponse
+        """
+        endpoint = 'payment/pricing/'
+
+        return PaymentAppResponse(self.execute_request('GET', endpoint, datetime.now()))
+
 
 class WalletOperation(AOperation):
     """
@@ -655,7 +695,7 @@ class WalletOperation(AOperation):
         Returns:
             PaginatedWallets
         """
-        endpoint = f'wallet//wallets/?page={page}'
+        endpoint = f'wallet/wallets/?page={page}'
 
         return PaginatedWallets(self.execute_request('GET', endpoint, datetime.now()))
 
@@ -810,3 +850,411 @@ class FundraisingOperation(AOperation):
 
         endpoint = f"fundraising/contributions/check/?ids={','.join(ids)}&source={source}"
         return [Contribution(item) for item in self.execute_request('GET', endpoint, datetime.now())]
+
+
+class CustomerOperation(AOperation):
+    service = 'customer'
+
+    def __init__(self, access_key, secret_key, language='en'):
+        super().__init__(None, access_key, secret_key, language=language)
+
+    def list(self, page: int = 1) -> PaginatedCustomers:
+        """
+        Get customers paginated.
+
+        Args:
+            page (int): the page number (Default value = 1)
+
+        Returns:
+            PaginatedCustomers
+        """
+        endpoint = f'customers/?page={page}'
+
+        return PaginatedCustomers(self.execute_request('GET', endpoint, datetime.now()))
+
+    def create(self, email: Optional[str] = None, phone: Optional[str] = None, town: Optional[str] = None,
+                        region: Optional[str] = None, country: Optional[str] = None,
+                        first_name: Optional[str] = None, last_name: Optional[str] = None,
+                        address: Optional[Dict[str, Any]] = None, metadata: Optional[Dict[str, Any]] = None,
+                        description: Optional[str] = None, nonce: Optional[str] = None) -> Customer:
+        """
+        Create a customer for the current application.
+
+        Returns:
+            Customer
+        """
+        endpoint = 'customers/'
+        body = {}
+
+        if email:
+            body['email'] = email
+        if phone:
+            body['phone'] = phone
+        if town:
+            body['town'] = town
+        if region:
+            body['region'] = region
+        if country:
+            body['country'] = country
+        if first_name:
+            body['first_name'] = first_name
+        if last_name:
+            body['last_name'] = last_name
+        if address:
+            body['address'] = address
+        if metadata:
+            body['metadata'] = metadata
+        if description:
+            body['description'] = description
+
+        return Customer(
+            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
+        )
+
+    def get(self, identifier: int) -> Customer:
+        """
+        Retrieve a customer created by the current application.
+
+        Args:
+            identifier (int): the identifier of the customer
+
+        Returns:
+            Customer
+        """
+        endpoint = f'customers/{identifier}/'
+
+        return Customer(self.execute_request('GET', endpoint, datetime.now()))
+
+    def update(self, identifier: int, email: Optional[str] = None, phone: Optional[str] = None,
+                        town: Optional[str] = None, region: Optional[str] = None, country: Optional[str] = None,
+                        first_name: Optional[str] = None, last_name: Optional[str] = None,
+                        address: Optional[Dict[str, Any]] = None, metadata: Optional[Dict[str, Any]] = None,
+                        description: Optional[str] = None, nonce: Optional[str] = None) -> Customer:
+        """
+        Update a customer created by the current application.
+
+        Returns:
+            Customer
+        """
+        endpoint = f'customers/{identifier}/'
+        body = {}
+
+        if email:
+            body['email'] = email
+        if phone:
+            body['phone'] = phone
+        if town:
+            body['town'] = town
+        if region:
+            body['region'] = region
+        if country:
+            body['country'] = country
+        if first_name:
+            body['first_name'] = first_name
+        if last_name:
+            body['last_name'] = last_name
+        if address:
+            body['address'] = address
+        if metadata:
+            body['metadata'] = metadata
+        if description:
+            body['description'] = description
+
+        return Customer(
+            self.execute_request('PUT', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
+        )
+
+    def patch(self, identifier: int, email: Optional[str] = None, phone: Optional[str] = None,
+                       town: Optional[str] = None, region: Optional[str] = None, country: Optional[str] = None,
+                       first_name: Optional[str] = None, last_name: Optional[str] = None,
+                       address: Optional[Dict[str, Any]] = None, metadata: Optional[Dict[str, Any]] = None,
+                       description: Optional[str] = None, nonce: Optional[str] = None) -> Customer:
+        """
+        Partially update a customer created by the current application.
+
+        Returns:
+            Customer
+        """
+        endpoint = f'customers/{identifier}/'
+        body = {}
+
+        if email:
+            body['email'] = email
+        if phone:
+            body['phone'] = phone
+        if town:
+            body['town'] = town
+        if region:
+            body['region'] = region
+        if country:
+            body['country'] = country
+        if first_name:
+            body['first_name'] = first_name
+        if last_name:
+            body['last_name'] = last_name
+        if address:
+            body['address'] = address
+        if metadata:
+            body['metadata'] = metadata
+        if description:
+            body['description'] = description
+
+        return Customer(
+            self.execute_request('PATCH', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
+        )
+
+    def delete(self, identifier: int):
+        """
+        Delete a customer created by the current application.
+
+        Args:
+            identifier (int): the identifier of the customer
+
+        Returns:
+            None
+        """
+        endpoint = f'customers/{identifier}/'
+
+        return self.execute_request('DELETE', endpoint, datetime.now())
+
+
+class ProductOperation(AOperation):
+    service = 'product'
+
+    def __init__(self, access_key, secret_key, language='en'):
+        super().__init__(None, access_key, secret_key, language=language)
+
+    def list(self, page: int = 1) -> PaginatedProducts:
+        """
+        Get products paginated.
+
+        Args:
+            page (int): the page number (Default value = 1)
+
+        Returns:
+            PaginatedProducts
+        """
+        endpoint = f'products/?page={page}'
+
+        return PaginatedProducts(self.execute_request('GET', endpoint, datetime.now()))
+
+    def create(self, name: str, category: Optional[str] = None, description: Optional[str] = None,
+                       image: Optional[str] = None, default_price: Optional[str] = None,
+                       price_type: Optional[str] = None, nonce: Optional[str] = None) -> Product:
+        """
+        Create a product for the current application.
+
+        Args:
+            name (str): the product name
+
+        Returns:
+            Product
+        """
+        endpoint = 'products/'
+        body = {'name': name}
+
+        if category:
+            body['category'] = category
+        if description:
+            body['description'] = description
+        if image:
+            body['image'] = image
+        if default_price:
+            body['default_price'] = default_price
+        if price_type:
+            body['price_type'] = price_type
+
+        return Product(
+            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
+        )
+
+    def get(self, identifier: str) -> Product:
+        """
+        Retrieve a product created by the current application.
+
+        Args:
+            identifier (str): the identifier of the product
+
+        Returns:
+            Product
+        """
+        endpoint = f'products/{identifier}/'
+
+        return Product(self.execute_request('GET', endpoint, datetime.now()))
+
+    def update(self, identifier: str, name: str, category: Optional[str] = None,
+                       description: Optional[str] = None, image: Optional[str] = None,
+                       default_price: Optional[str] = None, price_type: Optional[str] = None,
+                       nonce: Optional[str] = None) -> Product:
+        """
+        Update a product created by the current application.
+
+        Returns:
+            Product
+        """
+        endpoint = f'products/{identifier}/'
+        body = {'name': name}
+
+        if category:
+            body['category'] = category
+        if description:
+            body['description'] = description
+        if image:
+            body['image'] = image
+        if default_price:
+            body['default_price'] = default_price
+        if price_type:
+            body['price_type'] = price_type
+
+        return Product(
+            self.execute_request('PUT', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
+        )
+
+    def patch(self, identifier: str, name: Optional[str] = None, category: Optional[str] = None,
+                      description: Optional[str] = None, image: Optional[str] = None,
+                      default_price: Optional[str] = None, price_type: Optional[str] = None,
+                      nonce: Optional[str] = None) -> Product:
+        """
+        Partially update a product created by the current application.
+
+        Returns:
+            Product
+        """
+        endpoint = f'products/{identifier}/'
+        body = {}
+
+        if name:
+            body['name'] = name
+        if category:
+            body['category'] = category
+        if description:
+            body['description'] = description
+        if image:
+            body['image'] = image
+        if default_price:
+            body['default_price'] = default_price
+        if price_type:
+            body['price_type'] = price_type
+
+        return Product(
+            self.execute_request('PATCH', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
+        )
+
+    def delete(self, identifier: str):
+        """
+        Delete a product created by the current application.
+
+        Args:
+            identifier (str): the identifier of the product
+
+        Returns:
+            None
+        """
+        endpoint = f'products/{identifier}/'
+
+        return self.execute_request('DELETE', endpoint, datetime.now())
+
+
+class CheckOutOperation(AOperation):
+    service = 'checkout'
+
+    def check(self, identifier: str) -> CheckoutSession:
+        """
+        Retrieve a checkout session by identifier.
+
+        Args:
+            identifier (str): the identifier of the checkout session
+
+        Returns:
+            CheckoutSession
+        """
+        endpoint = f'checkout/sessions/{identifier}/'
+
+        return CheckoutSession(self.execute_request('GET', endpoint, datetime.now()))
+
+    def create(self, amount: float, success_url: str, cancel_url: str, nonce: Optional[str] = None,
+                                mode: str = 'payment', currency: str = 'XAF', description: Optional[str] = None,
+                                client_reference_id: Optional[str] = None, expires_in: Optional[int] = None,
+                                customer_id: Optional[str] = None, customer: Optional[Dict[str, Any]] = None,
+                                location: Optional[Dict[str, str]] = None,
+                                products: Optional[List[Dict[str, Any]]] = None,
+                                metadata: Optional[Dict[str, Any]] = None) -> CheckoutSession:
+        """
+        Create a checkout session.
+
+        Args:
+            amount (int): amount in minor unit (e.g cents)
+            success_url (str): redirect URL on successful payment
+            cancel_url (str): redirect URL on canceled payment
+            nonce (str, optional): unique string on each request
+            mode (str): checkout mode (Default value = 'payment')
+            currency (str): three-letter ISO currency code (Default value = 'XAF')
+            description (str, optional): payment description
+            client_reference_id (str, optional): your internal order reference
+            expires_in (int, optional): expiration in seconds
+            customer_id (str, optional): existing customer identifier
+            customer (dict, optional): customer information to prefill
+            location (dict, optional): optional location information
+            products (list, optional): optional product line items
+            metadata (dict, optional): additional key-value metadata
+
+        Returns:
+            CheckoutSession
+        """
+        endpoint = 'checkout/sessions/'
+        body = {
+            'mode': mode,
+            'amount': amount,
+            'currency': currency,
+            'success_url': success_url,
+            'cancel_url': cancel_url,
+        }
+
+        if description:
+            body['description'] = description
+        if client_reference_id:
+            body['client_reference_id'] = client_reference_id
+        if expires_in:
+            body['expires_in'] = expires_in
+        if customer_id:
+            body['customer_id'] = customer_id
+        if customer:
+            body['customer'] = customer
+        if location:
+            body['location'] = location
+        if products:
+            body['products'] = products
+        if metadata:
+            body['metadata'] = metadata
+
+        return CheckoutSession(
+            self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
+        )
+
+    def expire(self, identifier: str) -> CheckoutSession:
+        """
+        Expire a checkout session.
+
+        Args:
+            identifier (str): the identifier of the checkout session
+
+        Returns:
+            CheckoutSession
+        """
+        endpoint = f'checkout/sessions/{identifier}/expire/'
+
+        return CheckoutSession(self.execute_request('PATCH', endpoint, datetime.now()))
+
+    def delete(self, identifier: str):
+        """
+        Delete a checkout session.
+
+        Args:
+            identifier (str): the identifier of the checkout session
+
+        Returns:
+            dict
+        """
+        endpoint = f'checkout/sessions/{identifier}/'
+
+        return self.execute_request('DELETE', endpoint, datetime.now())
