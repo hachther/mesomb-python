@@ -1,9 +1,221 @@
-from typing import Any, Dict, List
+from typing import Dict, List
 
 try:
     from typing import TypedDict, Required, NotRequired
 except ImportError:  # pragma: no cover
     from typing_extensions import TypedDict, Required, NotRequired
+
+
+class AddressPayload(TypedDict, total=False):
+    """Postal address payload (Address schema).
+
+    Attributes:
+        line1: First line of the street address.
+        region: Region/state/province of the address.
+        town: Town/city of the address.
+        country: Two-letter country code.
+        line2: Optional second line of the street address.
+        zip: Optional postal or ZIP code.
+    """
+
+    line1: Required[str]
+    region: Required[str]
+    town: Required[str]
+    country: str
+    line2: str
+    zip: str
+
+
+class CustomerPayload(TypedDict, total=False):
+    """Customer payload used by payment/checkout/customer operations.
+
+    Attributes:
+        email: Customer contact email.
+        phone: Customer contact phone number.
+        town: Customer town/city.
+        region: Customer region/state.
+        country: Customer country code/name.
+        first_name: Customer first name.
+        last_name: Customer last name.
+        address: Optional structured address payload.
+    """
+
+    email: str
+    phone: str
+    town: str
+    region: str
+    country: str
+    first_name: str
+    last_name: str
+    address: AddressPayload
+
+
+class LocationPayload(TypedDict, total=False):
+    """Location payload (Location schema).
+
+    Attributes:
+        town: Town where the transaction happened.
+        region: Optional region where the transaction happened.
+        country: Optional country where the transaction happened.
+        ip: Optional IP address used for geolocation.
+    """
+
+    town: str
+    region: str
+    country: str
+    ip: str
+
+
+class OnlinePaymentProductPayload(TypedDict, total=False):
+    """Product line payload used by payment operations.
+
+    Attributes:
+        id: Product identifier in your catalog.
+        quantity: Quantity of this product line.
+        amount: Subtotal amount for this product line.
+    """
+
+    id: Required[str]
+    quantity: int
+    amount: float
+
+
+class ContactPayload(TypedDict, total=False):
+    """Fundraising contact payload (Contact schema).
+
+    Attributes:
+        phone_number: Contributor phone number.
+        email: Optional contributor email.
+    """
+
+    phone_number: Required[str]
+    email: str
+
+
+class FullNamePayload(TypedDict, total=False):
+    """Fundraising full name payload (FullName schema).
+
+    Attributes:
+        last_name: Contributor last name.
+        first_name: Optional contributor first name.
+    """
+
+    last_name: Required[str]
+    first_name: str
+
+
+class CheckoutSessionLineItemProductDataPayload(TypedDict, total=False):
+    """Inline ``product_data`` object for checkout line items.
+
+    Attributes:
+        name: Product name displayed in checkout.
+        description: Optional product description.
+        metadata: Optional metadata associated with this product.
+        images: Optional list of product image URLs.
+        unit_label: Optional text label for product unit.
+    """
+
+    name: Required[str]
+    description: str
+    metadata: Dict[str, object]
+    images: List[str]
+    unit_label: str
+
+
+class CheckoutSessionLineItemPayload(TypedDict, total=False):
+    """CheckoutSessionLineItem payload used in CreateCheckoutSession.
+
+    Attributes:
+        product: Existing product identifier.
+        unit_amount: Unit amount to charge.
+        currency: Currency for this line item.
+        quantity: Quantity for this line item.
+        product_data: Optional inline product data when creating ad-hoc product details.
+    """
+
+    product: Required[str]
+    unit_amount: Required[float]
+    currency: str
+    quantity: int
+    product_data: CheckoutSessionLineItemProductDataPayload
+
+
+class BrandingSettingsPayload(TypedDict, total=False):
+    """Checkout branding settings payload.
+
+    Attributes:
+        background_color: Checkout widget background color (hex value).
+        border_style: Border style for widget rendering.
+        button_color: Checkout pay button color (hex value).
+        display_name: Custom business name shown on checkout.
+        font_family: Font family used by checkout UI.
+    """
+
+    background_color: str
+    border_style: str
+    button_color: str
+    display_name: str
+    font_family: str
+
+
+class CheckoutConsentCollectionPayload(TypedDict, total=False):
+    """Checkout consent collection configuration payload.
+
+    Attributes:
+        promotions: Promotion consent collection mode.
+        terms_of_service: Terms of service acceptance mode.
+    """
+
+    promotions: str
+    terms_of_service: str
+
+
+class PaymentCustomFieldPayload(TypedDict, total=False):
+    """Payment custom field payload.
+
+    Attributes:
+        type: Field input type (for example ``text`` or ``number``).
+        label: Field label displayed to the customer.
+        set_limit: Enable value range limitation for this field.
+        optional: Allow this field to be left empty.
+        limit_type: Limit comparison mode (min/max/between/equal).
+        limit_min: Minimum accepted value.
+        limit_max: Maximum accepted value.
+    """
+
+    type: Required[str]
+    label: Required[str]
+    set_limit: bool
+    optional: bool
+    limit_type: str
+    limit_min: float
+    limit_max: float
+
+
+class CheckoutCustomTextPayload(TypedDict, total=False):
+    """Checkout custom text payload.
+
+    Attributes:
+        after_submit: Text displayed after submit button.
+        submit: Text displayed near submit button.
+        terms_of_service_acceptance: Text used for terms acceptance label.
+    """
+
+    after_submit: str
+    submit: str
+    terms_of_service_acceptance: str
+
+
+class CheckoutDiscountPayload(TypedDict, total=False):
+    """Checkout discount payload.
+
+    Attributes:
+        coupon: Coupon identifier to apply.
+        promotion_code: Promotion code identifier to apply.
+    """
+
+    coupon: str
+    promotion_code: str
 
 
 class CustomerParams(TypedDict, total=False):
@@ -29,8 +241,8 @@ class CustomerParams(TypedDict, total=False):
     country: str
     first_name: str
     last_name: str
-    address: Dict[str, Any]
-    metadata: Dict[str, Any]
+    address: AddressPayload
+    metadata: Dict[str, object]
     description: str
     nonce: str
 
@@ -113,8 +325,16 @@ class CheckoutCreateParams(TypedDict, total=False):
         customer_id: Existing customer identifier to associate.
         customer: Inline customer payload used to prefill checkout.
         location: Optional location payload for analytics.
-        products: Optional checkout line items.
+        line_items: Optional checkout line items.
+        branding_settings: Optional branding settings payload.
+        consent_collection: Optional consent collection configuration.
+        custom_fields: Optional list of checkout custom fields.
+        custom_text: Optional custom text blocks.
+        discounts: Optional discount/coupon payload.
+        required_contact_info: Ask customer contact information when true.
+        call_to_action: Checkout submit button type.
         metadata: Optional custom key-value metadata.
+        conversion: Enable amount conversion when needed.
         nonce: Optional request nonce override.
     """
     amount: Required[float]
@@ -126,10 +346,18 @@ class CheckoutCreateParams(TypedDict, total=False):
     client_reference_id: str
     expires_in: int
     customer_id: str
-    customer: Dict[str, Any]
-    location: Dict[str, str]
-    products: List[Dict[str, Any]]
-    metadata: Dict[str, Any]
+    customer: CustomerPayload
+    location: LocationPayload
+    line_items: List[CheckoutSessionLineItemPayload]
+    branding_settings: BrandingSettingsPayload
+    consent_collection: CheckoutConsentCollectionPayload
+    custom_fields: List[PaymentCustomFieldPayload]
+    custom_text: CheckoutCustomTextPayload
+    discounts: CheckoutDiscountPayload
+    required_contact_info: bool
+    call_to_action: str
+    metadata: Dict[str, object]
+    conversion: NotRequired[bool]
     nonce: str
 
 
@@ -160,9 +388,9 @@ class CollectParams(TypedDict, total=False):
     fees: NotRequired[bool]
     mode: NotRequired[str]
     conversion: NotRequired[bool]
-    location: Dict[str, str]
-    products: List[Dict[str, str]]
-    customer: Dict[str, str]
+    location: NotRequired[LocationPayload]
+    products: NotRequired[List[OnlinePaymentProductPayload]]
+    customer: NotRequired[CustomerPayload]
     trx_id: str
 
 
@@ -189,9 +417,9 @@ class DepositParams(TypedDict, total=False):
     country: NotRequired[str]
     currency: NotRequired[str]
     conversion: NotRequired[bool]
-    location: Dict[str, str]
-    products: List[Dict[str, str]]
-    customer: Dict[str, str]
+    location: NotRequired[LocationPayload]
+    products: NotRequired[List[OnlinePaymentProductPayload]]
+    customer: NotRequired[CustomerPayload]
     trx_id: str
 
 
@@ -218,9 +446,9 @@ class AirtimeParams(TypedDict, total=False):
     nonce: str
     country: NotRequired[str]
     currency: NotRequired[str]
-    location: Dict[str, str]
-    products: List[Dict[str, str]]
-    customer: Dict[str, str]
+    location: NotRequired[LocationPayload]
+    products: NotRequired[List[OnlinePaymentProductPayload]]
+    customer: NotRequired[CustomerPayload]
     trx_id: str
 
 
@@ -248,8 +476,8 @@ class YangoRefillParams(TypedDict, total=False):
     country: NotRequired[str]
     currency: NotRequired[str]
     mode: NotRequired[str]
-    location: Dict[str, str]
-    customer: Dict[str, str]
+    location: NotRequired[LocationPayload]
+    customer: NotRequired[CustomerPayload]
     trx_id: str
 
 
@@ -399,9 +627,9 @@ class FundraisingContributionParams(TypedDict, total=False):
     conversion: NotRequired[bool]
     anonymous: NotRequired[bool]
     accept_terms: NotRequired[bool]
-    location: Dict[str, str]
-    contact: Dict[str, str]
-    full_name: Dict[str, str]
+    location: NotRequired[LocationPayload]
+    contact: ContactPayload
+    full_name: FullNamePayload
     trx_id: str
 
 

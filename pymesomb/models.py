@@ -127,10 +127,11 @@ class CheckoutSession:
         self.id: str = data['id']
         self.object: str = data['object']
         self.status: str = data['status']
-        self.amount: int = data['amount']
+        self.amount: float = data['amount']
+        self.amount_total: float = data['amount_total']
         self.currency: Optional[str] = data.get('currency')
         self.description: Optional[str] = data.get('description')
-        self.checkout_url: str = data['checkout_url']
+        self.url: str = data['url']
         self.success_url: str = data['success_url']
         self.cancel_url: str = data['cancel_url']
         self.allowed_payment_methods: Any = data.get('allowed_payment_methods')

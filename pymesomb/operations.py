@@ -538,7 +538,7 @@ class WalletOperation(AOperation):
             **params: Wallet credit parameters defined in ``WalletAddMoneyParams``.
 
         Returns:
-            Wallet
+            WalletTransaction
         """
 
         endpoint = f'wallet/wallets/{wallet}/adjust/'
@@ -562,7 +562,7 @@ class WalletOperation(AOperation):
             **params: Wallet debit parameters defined in ``WalletRemoveMoneyParams``.
 
         Returns:
-            Wallet
+            WalletTransaction
         """
         endpoint = f'wallet/wallets/{wallet}/adjust/'
 
@@ -586,7 +586,7 @@ class WalletOperation(AOperation):
             **params: Transfer parameters defined in ``WalletTransferMoneyParams``.
 
         Returns:
-            Wallet
+            WalletTransaction
         """
         endpoint = f'wallet/wallets/{source}/transfer/'
 
@@ -622,7 +622,7 @@ class WalletOperation(AOperation):
             identifier (int): the identifier of the transaction
 
         Returns:
-            Transaction
+            WalletTransaction
         """
         endpoint = f'wallet/transactions/{identifier}/'
 
@@ -637,7 +637,7 @@ class WalletOperation(AOperation):
             wallet (int, optional): the identifier of the wallet (Default value = None)
 
         Returns:
-            List[WalletTransaction]
+            PaginatedWalletTransactions
         """
         endpoint = f'wallet/transactions/?page={page}'
 
@@ -754,7 +754,7 @@ class FundraisingOperation(AOperation):
 
 
 class CustomerOperation(AOperation):
-    service = 'customer'
+    service = 'payment'
 
     def __init__(self, access_key, secret_key, language='en'):
         super().__init__(None, access_key, secret_key, language=language)
@@ -859,7 +859,7 @@ class CustomerOperation(AOperation):
 
 
 class ProductOperation(AOperation):
-    service = 'product'
+    service = 'payment'
 
     def __init__(self, access_key, secret_key, language='en'):
         super().__init__(None, access_key, secret_key, language=language)
@@ -964,9 +964,9 @@ class ProductOperation(AOperation):
 
 
 class CheckOutOperation(AOperation):
-    service = 'checkout'
+    service = 'payment'
 
-    def check(self, identifier: str) -> CheckoutSession:
+    def retreive(self, identifier: str) -> CheckoutSession:
         """
         Retrieve a checkout session by identifier.
 
