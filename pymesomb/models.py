@@ -106,16 +106,30 @@ class Product:
         self.price_type: Optional[str] = data.get('price_type')
 
 
-class CheckoutSessionProduct:
-    """
-    Represents a product line in a checkout session.
-    """
+class CheckoutSessionLineItem:
+    """Represents a line item in a checkout session response."""
 
     def __init__(self, data: Dict[str, Any]):
-        self.product: Product = Product(data['product'])
+        raw_product = data.get('product')
+        if isinstance(raw_product, dict):
+            # Keep compatibility if backend expands the product object.
+            self.product: Any = Product(raw_product)
+            self.product_id: Optional[str] = raw_product.get('id')
+        else:
+            self.product = raw_product
+            self.product_id = raw_product
+
         self.quantity: Optional[int] = data.get('quantity')
-        self.unit_price: Optional[str] = data.get('unit_price')
-        self.subtotal: Optional[str] = data.get('subtotal')
+        self.unit_amount: Optional[float] = data.get('unit_amount')
+        self.currency: Optional[str] = data.get('currency')
+        self.product_data: Optional[Dict[str, Any]] = data.get('product_data')
+        self.limit_min: Optional[int] = data.get('limit_min')
+        self.limit_max: Optional[int] = data.get('limit_max')
+        self.adjustable: Optional[bool] = data.get('adjustable')
+
+
+# Backward-compatible alias kept for existing code using the old class name.
+CheckoutSessionProduct = CheckoutSessionLineItem
 
 
 class CheckoutSession:
@@ -128,20 +142,25 @@ class CheckoutSession:
         self.object: str = data['object']
         self.status: str = data['status']
         self.amount: float = data['amount']
-        self.amount_total: float = data['amount_total']
+        self.amount_total: Optional[float] = data.get('amount_total')
         self.currency: Optional[str] = data.get('currency')
         self.description: Optional[str] = data.get('description')
         self.url: str = data['url']
         self.success_url: str = data['success_url']
         self.cancel_url: str = data['cancel_url']
         self.allowed_payment_methods: Any = data.get('allowed_payment_methods')
-        self.customer: Customer = Customer(data['customer'])
+        self.customer: Optional[Customer] = Customer(data['customer']) if data.get('customer') else None
         self.attempt_count: int = data['attempt_count']
         self.failure_code: Optional[str] = data.get('failure_code')
         self.failure_message: Optional[str] = data.get('failure_message')
-        self.products: List[CheckoutSessionProduct] = [CheckoutSessionProduct(p) for p in data.get('products', [])]
+        line_items_data = data.get('line_items') or data.get('products') or []
+        self.line_items: List[CheckoutSessionLineItem] = [CheckoutSessionLineItem(item) for item in line_items_data]
+        # Backward-compatible alias for code still reading `products`.
+        self.products: List[CheckoutSessionLineItem] = self.line_items
         self.metadata: Any = data.get('metadata')
+        self.branding_settings: Optional[Dict[str, Any]] = data.get('branding_settings')
         self.client_reference_id: Optional[str] = data.get('client_reference_id')
+        self.secure_pay_mode: Optional[str] = data.get('secure_pay_mode')
         self.expires_at: datetime = datetime.fromisoformat(data['expires_at'].replace('Z', '+00:00'))
         self.created_at: datetime = datetime.fromisoformat(data['created_at'].replace('Z', '+00:00'))
         self.updated_at: datetime = datetime.fromisoformat(data['updated_at'].replace('Z', '+00:00'))

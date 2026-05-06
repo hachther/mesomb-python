@@ -101,6 +101,10 @@ Give a ⭐️ if this project helped you!
 
 ## Changes log
 
+### 2.1.1 (2026-04-23)
+- Rename products to line_items to improve clarity
+- Add secure payment in checkout creation
+
 ### 2.1.0 (2026-04-23)
 - Integration of checkout operation to create a checkout session and get the checkout url
 - Integration of customer and product management operations

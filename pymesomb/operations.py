@@ -214,8 +214,8 @@ class PaymentOperation(AOperation):
         if params.get('customer'):
             body['customer'] = params['customer']
 
-        if params.get('products'):
-            body['products'] = params['products']
+        if params.get('line_items'):
+            body['line_items'] = params['line_items']
 
         return TransactionResponse(
             self.execute_request(
@@ -255,8 +255,8 @@ class PaymentOperation(AOperation):
         if params.get('customer'):
             body['customer'] = params['customer']
 
-        if params.get('products'):
-            body['products'] = params['products']
+        if params.get('line_items'):
+            body['line_items'] = params['line_items']
 
         return TransactionResponse(
             self.execute_request('POST', endpoint, datetime.now(), params.get('nonce') or RandomGenerator.nonce(), body)
@@ -293,8 +293,8 @@ class PaymentOperation(AOperation):
         if params.get('customer'):
             body['customer'] = params['customer']
 
-        if params.get('products'):
-            body['products'] = params['products']
+        if params.get('line_items'):
+            body['line_items'] = params['line_items']
 
         return TransactionResponse(
             self.execute_request('POST', endpoint, datetime.now(), params.get('nonce') or RandomGenerator.nonce(), body)
@@ -331,6 +331,9 @@ class PaymentOperation(AOperation):
 
         if params.get('customer'):
             body['customer'] = params['customer']
+
+        if params.get('line_items'):
+            body['line_items'] = params['line_items']
 
         return TransactionResponse(
             self.execute_request(
@@ -710,6 +713,9 @@ class FundraisingOperation(AOperation):
 
         if params.get('full_name'):
             body['full_name'] = params['full_name']
+
+        if params.get('line_items'):
+            body['line_items'] = params['line_items']
 
         return ContributionResponse(
             self.execute_request(

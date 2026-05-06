@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 
 try:
     from typing import TypedDict, Required, NotRequired
@@ -66,18 +66,50 @@ class LocationPayload(TypedDict, total=False):
     ip: str
 
 
-class OnlinePaymentProductPayload(TypedDict, total=False):
-    """Product line payload used by payment operations.
+class PaymentLineItemProductDataPayload(TypedDict, total=False):
+    """Inline product data for a payment line item.
 
     Attributes:
-        id: Product identifier in your catalog.
-        quantity: Quantity of this product line.
-        amount: Subtotal amount for this product line.
+        name: Name of the product being purchased.
+        description: Optional description of the product.
+        metadata: Optional metadata associated with this product.
+        images: Optional list of up to 8 image URLs for this product.
+        unit_label: Optional label that represents units of this product.
     """
 
-    id: Required[str]
+    name: Required[str]
+    description: str
+    metadata: Dict[str, object]
+    images: List[str]
+    unit_label: str
+
+
+class PaymentLineItemPayload(TypedDict, total=False):
+    """Product line item payload used by payment/fundraising operations (PaymentLineItem schema).
+
+    Attributes:
+        product: ID of an existing Product record to add to this line item.
+        unit_amount: Unit amount for this line item.
+        currency: Currency for this line item (default XAF).
+        quantity: Quantity for this line item (min 1, default 1).
+        product_data: Optional inline product data when creating ad-hoc product details.
+        limit_min: Minimum quantity allowed for this line item.
+        limit_max: Maximum quantity allowed for this line item.
+        adjustable: If true, the customer can adjust this line item's quantity.
+    """
+
+    product: str
+    unit_amount: float
+    currency: str
     quantity: int
-    amount: float
+    product_data: PaymentLineItemProductDataPayload
+    limit_min: int
+    limit_max: int
+    adjustable: bool
+
+
+# Backward-compatible alias — remove in a future major release.
+OnlinePaymentProductPayload = PaymentLineItemPayload
 
 
 class ContactPayload(TypedDict, total=False):
@@ -104,40 +136,8 @@ class FullNamePayload(TypedDict, total=False):
     first_name: str
 
 
-class CheckoutSessionLineItemProductDataPayload(TypedDict, total=False):
-    """Inline ``product_data`` object for checkout line items.
-
-    Attributes:
-        name: Product name displayed in checkout.
-        description: Optional product description.
-        metadata: Optional metadata associated with this product.
-        images: Optional list of product image URLs.
-        unit_label: Optional text label for product unit.
-    """
-
-    name: Required[str]
-    description: str
-    metadata: Dict[str, object]
-    images: List[str]
-    unit_label: str
-
-
-class CheckoutSessionLineItemPayload(TypedDict, total=False):
-    """CheckoutSessionLineItem payload used in CreateCheckoutSession.
-
-    Attributes:
-        product: Existing product identifier.
-        unit_amount: Unit amount to charge.
-        currency: Currency for this line item.
-        quantity: Quantity for this line item.
-        product_data: Optional inline product data when creating ad-hoc product details.
-    """
-
-    product: Required[str]
-    unit_amount: Required[float]
-    currency: str
-    quantity: int
-    product_data: CheckoutSessionLineItemProductDataPayload
+CheckoutSessionLineItemProductDataPayload = PaymentLineItemProductDataPayload
+CheckoutSessionLineItemPayload = PaymentLineItemPayload
 
 
 class BrandingSettingsPayload(TypedDict, total=False):
@@ -216,6 +216,28 @@ class CheckoutDiscountPayload(TypedDict, total=False):
 
     coupon: str
     promotion_code: str
+
+
+class SecurePaymentSettingPayload(TypedDict, total=False):
+    """Secure payment configuration payload for checkout.
+
+    Attributes:
+        auto_release_delay_hours: Hours before automatic release after delivery confirmation.
+        dispute_enabled: Enable dispute resolution for secure payments.
+        delivery_required: Require delivery confirmation.
+        terms_accepted: Merchant acceptance of secure payment terms.
+        commitment_fee: Commitment fee amount (decimal string).
+        fee_payer: Fee payer policy (buyer/seller/split/no_fee).
+        pay_mode: Secure pay mode (disabled/optional/mandatory).
+    """
+
+    auto_release_delay_hours: int
+    dispute_enabled: bool
+    delivery_required: bool
+    terms_accepted: bool
+    commitment_fee: str
+    fee_payer: str
+    pay_mode: str
 
 
 class CustomerParams(TypedDict, total=False):
@@ -314,7 +336,7 @@ class CheckoutCreateParams(TypedDict, total=False):
     """Parameters for checkout session creation.
 
     Attributes:
-        amount: Amount in minor units.
+        amount: Amount in minor units (decimal string or numeric value).
         success_url: URL used after successful payment.
         cancel_url: URL used after canceled payment.
         mode: Checkout mode (default is payment).
@@ -325,6 +347,8 @@ class CheckoutCreateParams(TypedDict, total=False):
         customer_id: Existing customer identifier to associate.
         customer: Inline customer payload used to prefill checkout.
         location: Optional location payload for analytics.
+        fees_included: Include fees in charged amount when true.
+        secure_pay: Secure payment configuration.
         line_items: Optional checkout line items.
         branding_settings: Optional branding settings payload.
         consent_collection: Optional consent collection configuration.
@@ -337,7 +361,7 @@ class CheckoutCreateParams(TypedDict, total=False):
         conversion: Enable amount conversion when needed.
         nonce: Optional request nonce override.
     """
-    amount: Required[float]
+    amount: Required[Union[float, str]]
     success_url: Required[str]
     cancel_url: Required[str]
     mode: NotRequired[str]
@@ -348,6 +372,8 @@ class CheckoutCreateParams(TypedDict, total=False):
     customer_id: str
     customer: CustomerPayload
     location: LocationPayload
+    fees_included: bool
+    secure_pay: SecurePaymentSettingPayload
     line_items: List[CheckoutSessionLineItemPayload]
     branding_settings: BrandingSettingsPayload
     consent_collection: CheckoutConsentCollectionPayload
@@ -375,7 +401,7 @@ class CollectParams(TypedDict, total=False):
         mode: Operation mode (synchronous/asynchronous).
         conversion: Enable amount conversion when needed.
         location: Customer location payload.
-        products: Product items purchased in the transaction.
+        line_items: Optional line items purchased in the transaction.
         customer: Customer information payload.
         trx_id: External transaction identifier.
     """
@@ -389,7 +415,7 @@ class CollectParams(TypedDict, total=False):
     mode: NotRequired[str]
     conversion: NotRequired[bool]
     location: NotRequired[LocationPayload]
-    products: NotRequired[List[OnlinePaymentProductPayload]]
+    line_items: NotRequired[List[PaymentLineItemPayload]]
     customer: NotRequired[CustomerPayload]
     trx_id: str
 
@@ -406,7 +432,7 @@ class DepositParams(TypedDict, total=False):
         currency: Transaction currency code.
         conversion: Enable amount conversion when needed.
         location: Customer location payload.
-        products: Product items purchased in the transaction.
+        line_items: Optional line items purchased in the transaction.
         customer: Customer information payload.
         trx_id: External transaction identifier.
     """
@@ -418,7 +444,7 @@ class DepositParams(TypedDict, total=False):
     currency: NotRequired[str]
     conversion: NotRequired[bool]
     location: NotRequired[LocationPayload]
-    products: NotRequired[List[OnlinePaymentProductPayload]]
+    line_items: NotRequired[List[PaymentLineItemPayload]]
     customer: NotRequired[CustomerPayload]
     trx_id: str
 
@@ -435,7 +461,7 @@ class AirtimeParams(TypedDict, total=False):
         country: Country code of the transaction.
         currency: Transaction currency code.
         location: Customer location payload.
-        products: Product items purchased in the transaction.
+        line_items: Optional line items purchased in the transaction.
         customer: Customer information payload.
         trx_id: External transaction identifier.
     """
@@ -447,7 +473,7 @@ class AirtimeParams(TypedDict, total=False):
     country: NotRequired[str]
     currency: NotRequired[str]
     location: NotRequired[LocationPayload]
-    products: NotRequired[List[OnlinePaymentProductPayload]]
+    line_items: NotRequired[List[PaymentLineItemPayload]]
     customer: NotRequired[CustomerPayload]
     trx_id: str
 
@@ -477,6 +503,7 @@ class YangoRefillParams(TypedDict, total=False):
     currency: NotRequired[str]
     mode: NotRequired[str]
     location: NotRequired[LocationPayload]
+    line_items: NotRequired[List[PaymentLineItemPayload]]
     customer: NotRequired[CustomerPayload]
     trx_id: str
 
@@ -613,6 +640,7 @@ class FundraisingContributionParams(TypedDict, total=False):
         anonymous: Contribute anonymously when true.
         accept_terms: Confirm terms acceptance.
         location: Contributor location payload.
+        line_items: Optional line items linked to the contribution.
         contact: Contributor contact payload.
         full_name: Contributor full-name payload.
         trx_id: External transaction identifier.
@@ -628,6 +656,7 @@ class FundraisingContributionParams(TypedDict, total=False):
     anonymous: NotRequired[bool]
     accept_terms: NotRequired[bool]
     location: NotRequired[LocationPayload]
+    line_items: NotRequired[List[PaymentLineItemPayload]]
     contact: ContactPayload
     full_name: FullNamePayload
     trx_id: str

@@ -3,7 +3,7 @@ import unittest
 from pymesomb import mesomb
 from pymesomb.exceptions import ServiceNotFoundException, PermissionDeniedException, InvalidClientRequestException
 from pymesomb.operations import PaymentOperation
-
+from pymesomb.params import PaymentLineItemPayload
 
 class CollectTest(unittest.TestCase):
     def setUp(self):
@@ -42,22 +42,33 @@ class CollectTest(unittest.TestCase):
 
     def test_make_payment_success_and_products(self):
         operation = PaymentOperation(self.application_key, self.access_key, self.secret_key)
-        response = operation.make_collect(amount=100, service='MTN', payer='670000000', trx_id='1', customer={
-            'phone': '+237677550439',
-            'email': 'fisher.bank@gmail.com',
-            'first_name': 'Fisher',
-            'last_name': 'BANK',
-        }, location={
-            'town': 'Douala',
-            'region': 'Littoral',
-            'country': 'Cameroun'
-        }, products=[
+        line_items: list[PaymentLineItemPayload] = [
             {
-                'id': 'SKU001',
-                'name': 'Sac a Main',
-                'category': 'Sac',
+                'product_data': {
+                    'name': 'Sac a Main',
+                },
+                'unit_amount': 100,
+                'quantity': 1,
             }
-        ])
+        ]
+        response = operation.make_collect(
+            amount=100,
+            service='MTN',
+            payer='670000000',
+            trx_id='1',
+            customer={
+                'phone': '+237677550439',
+                'email': 'fisher.bank@gmail.com',
+                'first_name': 'Fisher',
+                'last_name': 'BANK',
+            },
+            location={
+                'town': 'Douala',
+                'region': 'Littoral',
+                'country': 'Cameroun'
+            },
+            line_items=line_items,
+        )
         self.assertTrue(response.is_operation_success())
         self.assertTrue(response.is_transaction_success())
         self.assertEqual(response.status, "SUCCESS")
@@ -73,9 +84,9 @@ class CollectTest(unittest.TestCase):
         self.assertEqual(response.transaction.customer.last_name, "BANK")
         self.assertEqual(response.transaction.location.town, "Douala")
         self.assertEqual(response.transaction.location.country, "Cameroun")
-        products = response.transaction.products
-        assert products is not None
-        self.assertEqual(len(products), 1)
+        line_items = response.transaction.products
+        assert line_items is not None
+        self.assertEqual(len(line_items), 1)
 
     def test_make_payment_pending(self):
         operation = PaymentOperation(self.application_key, self.access_key, self.secret_key)
