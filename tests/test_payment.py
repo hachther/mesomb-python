@@ -73,7 +73,9 @@ class CollectTest(unittest.TestCase):
         self.assertEqual(response.transaction.customer.last_name, "BANK")
         self.assertEqual(response.transaction.location.town, "Douala")
         self.assertEqual(response.transaction.location.country, "Cameroun")
-        self.assertEqual(len(response.transaction.products), 1)
+        products = response.transaction.products
+        assert products is not None
+        self.assertEqual(len(products), 1)
 
     def test_make_payment_pending(self):
         operation = PaymentOperation(self.application_key, self.access_key, self.secret_key)
@@ -162,5 +164,6 @@ class TransactionTest(unittest.TestCase):
 
     def test_get_transactions_success(self):
         operation = PaymentOperation(self.application_key, self.access_key, self.secret_key)
-        transactions = operation.get_transactions(['9886f099-dee2-4eaa-9039-e92b2ee33353', '9886f099-dee2-4eaa-9039-e92b2ee33354'])
+        transactions = operation.get_transactions(
+            ['9886f099-dee2-4eaa-9039-e92b2ee33353', '9886f099-dee2-4eaa-9039-e92b2ee33354'])
         self.assertEqual(1, len(transactions))

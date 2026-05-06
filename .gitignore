@@ -9,3 +9,5 @@ _trial_temp
 venv
 .DS_Store
 openapi.json
+.env
+publish.sh
