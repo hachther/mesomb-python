@@ -10,7 +10,7 @@ class CustomerOperationTest(unittest.TestCase):
         self.application_key = '2bb525516ff374bb52545bf22ae4da7d655ba9fd'
         self.access_key = 'c6c40b76-8119-4e93-81bf-bfb55417b392'
         self.secret_key = 'fe8c2445-810f-4caa-95c9-778d51580163'
-        self.operation = CustomerOperation(self.access_key, self.secret_key)
+        self.operation = CustomerOperation(self.application_key, self.access_key, self.secret_key)
 
     def call_or_skip(self, call, *args, **kwargs):
         try:

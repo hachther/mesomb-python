@@ -762,9 +762,6 @@ class FundraisingOperation(AOperation):
 class CustomerOperation(AOperation):
     service = 'payment'
 
-    def __init__(self, access_key, secret_key, language='en'):
-        super().__init__(None, access_key, secret_key, language=language)
-
     def list(self, page: int = 1) -> PaginatedCustomers:
         """
         Get customers paginated.
@@ -797,7 +794,7 @@ class CustomerOperation(AOperation):
             self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
         )
 
-    def get(self, identifier: int) -> Customer:
+    def retrieve(self, identifier: int) -> Customer:
         """
         Retrieve a customer created by the current application.
 
@@ -867,9 +864,6 @@ class CustomerOperation(AOperation):
 class ProductOperation(AOperation):
     service = 'payment'
 
-    def __init__(self, access_key, secret_key, language='en'):
-        super().__init__(None, access_key, secret_key, language=language)
-
     def list(self, page: int = 1) -> PaginatedProducts:
         """
         Get products paginated.
@@ -902,7 +896,7 @@ class ProductOperation(AOperation):
             self.execute_request('POST', endpoint, datetime.now(), nonce or RandomGenerator.nonce(), body)
         )
 
-    def get(self, identifier: str) -> Product:
+    def retrieve(self, identifier: str) -> Product:
         """
         Retrieve a product created by the current application.
 
