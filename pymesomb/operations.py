@@ -56,7 +56,7 @@ class AOperation(ABC):
         if detail.startswith('{'):
             data = json.loads(detail)
             detail = data['detail']
-            code = data['code']
+            code = data.get('code', None)
 
         if status_code == 404:
             raise ServiceNotFoundException(detail, code)
@@ -79,7 +79,7 @@ class AOperation(ABC):
         Returns:
             str: the full url to use in the request
         """
-        return f'{mesomb.host}/api/{mesomb.api_version}/{endpoint}'
+        return f'{mesomb.host}/{mesomb.api_version}/{endpoint}'
 
     def get_authorization(self, method: str, endpoint: str, date: datetime, nonce: str,
                           headers: Optional[Dict[str, Any]] = None, body: Optional[Dict[str, Any]] = None) -> str:

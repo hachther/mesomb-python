@@ -292,6 +292,11 @@ except InvalidClientRequestException as exc:
 
 ## Changelog
 
+### 2.1.3 (2026-11-21)
+
+- Rename base url
+- Fix parsing error
+
 ### 2.1.1 (2026-05-06)
 
 - Rename products to line_items to improve clarity.
